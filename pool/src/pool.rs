@@ -54,7 +54,7 @@ impl SwapMath for Deltas {}
 impl<P: V3Pool> SwapMath for P {}
 
 impl Deltas {
-    pub fn new() -> Self {
+    fn new() -> Self {
         Self {
             token0_delta: Float::with_val(100, 0),
             token1_delta: Float::with_val(100, 0),
@@ -87,7 +87,7 @@ impl FeeTier {
 }
 
 impl TickSpacing {
-    fn as_fee(tick_spacing: TickSpacing) -> FeeTier {
+    pub fn as_fee(tick_spacing: TickSpacing) -> FeeTier {
         match tick_spacing {
             TickSpacing::Min => FeeTier::Min,
             TickSpacing::Mid => FeeTier::Mid,
