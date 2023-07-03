@@ -1,0 +1,16 @@
+[package]
+name = "v3"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ethers = "2.0.6"
+bigdecimal = "0.3.0"
+num = "0.4.0"
+rug = "1.10.0"
+tokio = { version = "1.16.1", features = ["full"] }
+bindings = { workspace = true }
+futures = "0.3.17"
+lazy_static = "1.4.0"
