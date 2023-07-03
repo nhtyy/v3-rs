@@ -1,11 +1,11 @@
-use crate::pool::{FeeTier, SwapMath, Tick, TickSpacing, V3Pool, V3PoolError};
+use crate::pool::{FeeTier, Tick, TickSpacing, V3Pool, V3PoolError};
 use bindings::{ERC20Contract, V3PoolContract};
 use ethers::contract::ContractError;
 use ethers::{
     providers::Middleware,
     types::{Address, U256},
 };
-use rug::{float::ParseFloatError, ops::Pow, Float};
+use rug::Float;
 
 /// Blocks the current thread
 /// You should spawn a new thread for this

@@ -1,7 +1,6 @@
 use ethers::providers::{Http, Provider};
 use numeraire::Numeraire;
 use pool::V3Pool;
-use rug::Float;
 
 use std::sync::Arc;
 

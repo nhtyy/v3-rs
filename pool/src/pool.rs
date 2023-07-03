@@ -1,5 +1,4 @@
 pub use ethers::types::{Address, I256, U256};
-use lazy_static::lazy_static;
 use rug::{float::ParseFloatError, ops::Pow, Float};
 use std::error::Error;
 
@@ -15,8 +14,8 @@ pub enum V3PoolError<T: Error> {
 /// [Deltas] is a simple struct that holds some deltas of token0 and token1
 #[derive(Debug, Clone)]
 pub struct Deltas {
-    token0_delta: Float,
-    token1_delta: Float,
+    pub token0_delta: Float,
+    pub token1_delta: Float,
 }
 
 #[derive(Debug, Clone, Copy)]
