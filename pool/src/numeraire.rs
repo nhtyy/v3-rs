@@ -6,6 +6,13 @@ pub enum Token {
     One,
 }
 
+/// [Numeraire] is a trait that is implemented on all [V3Pool]s
+///
+/// It provides some helper functions for getting the price of the pool in "human readable" form
+///
+/// as well as provides an interface for fetching this in some target quote currency
+///
+/// todo we should probaly have strong types on the Prices returned
 pub trait Numeraire: V3Pool {
     /// returns the human readable price in terms of Token
     fn human_price_in(&self, numeraire: Token) -> Result<Float, V3PoolError<Self::BackendError>> {
@@ -18,7 +25,7 @@ pub trait Numeraire: V3Pool {
     /// price of token0 in token terms of token 1, accounting for decimals
     /// aka y / x
     fn human_price(&self) -> Result<Float, V3PoolError<Self::BackendError>> {
-        let price = self.price()?;
+        let price = self.sqrt_price()?.pow(2);
 
         let exp = -(self.token1_decimals() as i16 - self.token0_decimals() as i16);
 

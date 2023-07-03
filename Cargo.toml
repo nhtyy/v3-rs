@@ -16,3 +16,4 @@ default-members = [
 
 [workspace.dependencies]
 bindings = { path = "./bindings" }
+pool = { path = "./pool" }
