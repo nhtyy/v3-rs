@@ -5,9 +5,9 @@ use std::error::Error;
 pub type Tick = i32;
 
 #[derive(Debug, Clone, Copy)]
-pub enum V3PoolError<T: Error> {
+pub enum V3PoolError<E: Error> {
     ParseError(ParseFloatError),
-    BackendError(T),
+    BackendError(E),
     BadRange(Tick, Tick, i32),
 }
 

@@ -48,8 +48,6 @@ impl<'pool, P: V3Pool> PoolPrice<'pool, P> {
 /// It provides some helper functions for getting the price of the pool in "human readable" form
 ///
 /// as well as provides an interface for fetching this in some target quote currency
-///
-/// todo we should probaly have strong types on the Prices returned
 pub trait Numeraire: V3Pool + Sized {
     fn pool_price(&self) -> Result<PoolPrice<Self>, V3PoolError<Self::BackendError>> {
         let price = self.sqrt_price()?.pow(2);
@@ -69,6 +67,7 @@ pub trait Numeraire: V3Pool + Sized {
     ) -> Result<Deltas, V3PoolError<Self::BackendError>> {
         let mut spacing = self.tick_spacing() as i32;
         let mut current_liquidity = self.current_liquidity()?;
+
         let current_sqrt_price = self.sqrt_price()?;
         let target_sqrt_price = new_price.into_pool_price_float().sqrt();
 

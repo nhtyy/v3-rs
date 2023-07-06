@@ -1,6 +1,4 @@
 pub mod IERC20;
-pub mod IOFTV2;
-pub mod IProxyOFTV2;
 pub mod IUniswapV3Factory;
 pub mod IUniswapV3Pool;
 

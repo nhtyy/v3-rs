@@ -32,10 +32,4 @@ fn main() {
 
     rust_file_generation("src/abis/ERC20.json", "src/IERC20.rs", "IERC20")
         .expect("Failed to generate bindings");
-
-    rust_file_generation("src/abis/OFTV2.json", "src/IOFTV2.rs", "IOFTV2")
-        .expect("Failed to generate bindings");
-
-    rust_file_generation("src/abis/OFTV2.json", "src/IProxyOFTV2.rs", "IProxyOFTV2")
-        .expect("Failed to generate bindings");
 }
