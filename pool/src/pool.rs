@@ -53,14 +53,14 @@ impl SwapMath for Deltas {}
 impl<P: V3Pool> SwapMath for P {}
 
 impl Deltas {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             token0_delta: Float::with_val(100, 0),
             token1_delta: Float::with_val(100, 0),
         }
     }
 
-    fn update(&mut self, liquidity: Float, sqrt_price: Float, target_price: Float) {
+    pub fn update(&mut self, liquidity: Float, sqrt_price: Float, target_price: Float) {
         self.token0_delta +=
             Self::token0_delta(liquidity.clone(), sqrt_price.clone(), target_price.clone());
         self.token1_delta += Self::token1_delta(liquidity, sqrt_price, target_price);
@@ -136,87 +136,6 @@ pub trait V3Pool: SwapMath {
         let price = Float::with_val(100, valid);
 
         Ok(price / Self::x96())
-    }
-
-    /// Returns the amount of token0 and token1 needed to move the pool price to the target price
-    /// price_of_0_in_1 should not include the underlying nominal units
-    fn amounts_to_move_price(
-        &self,
-        new_price_of_0_in_1: Float,
-    ) -> Result<Deltas, V3PoolError<Self::BackendError>> {
-        let mut spacing = self.tick_spacing() as i32;
-        let mut current_liquidity = self.current_liquidity()?;
-        let sqrt_price = self.sqrt_price()?;
-
-        let current_lower_tick = Self::price_to_tick(self.sqrt_price()?, self.tick_spacing());
-        let target_lower_tick =
-            Self::price_to_tick(new_price_of_0_in_1.clone(), self.tick_spacing());
-
-        let mut deltas = Deltas::new();
-        let mut next_tick: i32 = Default::default();
-
-        let ticks = if current_lower_tick < target_lower_tick {
-            // ending will be the lower tick of where the target price is
-            // starting will be the upper tick of the current price is
-
-            next_tick = current_lower_tick + spacing;
-
-            deltas.update(
-                current_liquidity.clone(),
-                sqrt_price,
-                Self::tick_to_price(next_tick),
-            );
-
-            self.tick_range(next_tick, target_lower_tick)?
-        } else if current_lower_tick > target_lower_tick {
-            // ending will be the upper tick of where the target price is
-            // starting will be the lower tick of the current price
-
-            next_tick = current_lower_tick;
-
-            deltas.update(
-                current_liquidity.clone(),
-                sqrt_price,
-                Self::tick_to_price(next_tick),
-            );
-
-            let ticks = self.tick_range(current_lower_tick, target_lower_tick + spacing)?;
-
-            spacing = -spacing;
-
-            ticks
-        } else {
-            // equal case
-            self.tick_range(current_lower_tick, current_lower_tick)?
-        };
-
-        let mut ticks = ticks.into_iter().peekable();
-        loop {
-            match ticks.peek() {
-                Some(_) => {
-                    let delta = ticks.next().expect("peeked value should exist");
-                    let current_tick = next_tick;
-
-                    current_liquidity += delta;
-                    next_tick += spacing;
-
-                    deltas.update(
-                        current_liquidity.clone(),
-                        Self::tick_to_price(current_tick),
-                        Self::tick_to_price(next_tick),
-                    );
-                }
-                None => {
-                    deltas.update(
-                        current_liquidity.clone(),
-                        Self::tick_to_price(next_tick),
-                        new_price_of_0_in_1,
-                    );
-
-                    return Ok(deltas);
-                }
-            }
-        }
     }
 
     /// represnets the LOWER TICK of a given price
