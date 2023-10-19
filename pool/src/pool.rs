@@ -1,3 +1,4 @@
+use crate::numeraire::PoolPrice;
 pub use ethers::types::{Address, I256, U256};
 use rug::{float::ParseFloatError, ops::Pow, Float};
 use std::error::Error;
@@ -100,38 +101,43 @@ impl TickSpacing {
 /// as well as the amount of token0 and token1 needed to move the pool price to a target price
 ///
 /// it also provides some low level price functionality, that is built upon by other traits such as [crate::numeraire::Numeraire]
-pub trait V3Pool: SwapMath {
+#[async_trait::async_trait]
+pub trait V3Pool: SwapMath + Sized {
     type Ticks: IntoIterator<Item = Float>;
     type BackendError: Error;
 
-    fn tick_spacing(&self) -> TickSpacing;
     fn fee(&self) -> FeeTier;
-    fn current_liquidity(&self) -> Result<Float, V3PoolError<Self::BackendError>>;
     fn token0(&self) -> Address;
     fn token1(&self) -> Address;
     fn token0_decimals(&self) -> u8;
     fn token1_decimals(&self) -> u8;
-    fn sqrt_price_x96(&self) -> Result<U256, V3PoolError<Self::BackendError>>;
+
+    async fn current_liquidity(&self) -> Result<Float, V3PoolError<Self::BackendError>>;
+    async fn sqrt_price_x96(&self) -> Result<U256, V3PoolError<Self::BackendError>>;
 
     /// returns the liqudity delta at a given value in terms of crossing from left to right
     /// in other words if the price of the pool is increasing, this tick delta will should be added
-    fn tick(&self, tick: Tick) -> Result<Float, V3PoolError<Self::BackendError>>;
+    async fn tick(&self, tick: Tick) -> Result<Float, V3PoolError<Self::BackendError>>;
 
     /// since tick delta should be added as price increase, a tick range can account for the opposite case
     /// if ending < starting, you can flip the signs of the deltas, implementors should ensure that you can always add these values
     /// we also let implementors handle this because they may have some optimizations for this case
-    fn tick_range(
+    async fn tick_range(
         &self,
         starting: Tick,
         ending: Tick,
     ) -> Result<Self::Ticks, V3PoolError<Self::BackendError>>;
 
+    fn tick_spacing(&self) -> TickSpacing {
+        self.fee().as_spacing()
+    }
+
     fn x96() -> Float {
         Float::with_val(100, 2u128.pow(96))
     }
 
-    fn sqrt_price(&self) -> Result<Float, V3PoolError<Self::BackendError>> {
-        let valid = Float::parse(self.sqrt_price_x96()?.to_string())?;
+    async fn sqrt_price(&self) -> Result<Float, V3PoolError<Self::BackendError>> {
+        let valid = Float::parse(self.sqrt_price_x96().await?.to_string())?;
 
         let price = Float::with_val(100, valid);
 
@@ -157,6 +163,91 @@ pub trait V3Pool: SwapMath {
     fn tick_to_price(tick: Tick) -> Float {
         let base = Float::with_val(100, 1.0001);
         base.pow(tick)
+    }
+
+    /// Returns the amount of token0 and token1 needed to move the pool price to the target price
+    /// price_of_0_in_1 should not include the underlying nominal units
+    async fn amounts_to_move_price(
+        &self,
+        new_price: PoolPrice<'async_trait, Self>,
+    ) -> Result<Deltas, V3PoolError<Self::BackendError>> {
+        let mut spacing = self.tick_spacing() as i32;
+        let mut current_liquidity = self.current_liquidity().await?;
+
+        let current_sqrt_price = self.sqrt_price().await?;
+        let target_sqrt_price = new_price.into_pool_price_float().sqrt();
+
+        let current_lower_tick = Self::price_to_tick(self.sqrt_price().await?, self.tick_spacing());
+        let target_lower_tick = Self::price_to_tick(target_sqrt_price.clone(), self.tick_spacing());
+
+        let mut deltas = Deltas::new();
+        let mut next_tick: i32 = Default::default();
+
+        let ticks = if current_lower_tick < target_lower_tick {
+            // ending will be the lower tick of where the target price is
+            // starting will be the upper tick of the current price is
+
+            next_tick = current_lower_tick + spacing;
+
+            deltas.update(
+                current_liquidity.clone(),
+                current_sqrt_price,
+                Self::tick_to_price(next_tick),
+            );
+
+            self.tick_range(next_tick, target_lower_tick).await?
+        } else if current_lower_tick > target_lower_tick {
+            // ending will be the upper tick of where the target price is
+            // starting will be the lower tick of the current price
+
+            next_tick = current_lower_tick;
+
+            deltas.update(
+                current_liquidity.clone(),
+                current_sqrt_price,
+                Self::tick_to_price(next_tick),
+            );
+
+            let ticks = self
+                .tick_range(current_lower_tick, target_lower_tick + spacing)
+                .await?;
+
+            spacing = -spacing;
+
+            ticks
+        } else {
+            // equal case
+            self.tick_range(current_lower_tick, current_lower_tick)
+                .await?
+        };
+
+        let mut ticks = ticks.into_iter().peekable();
+        loop {
+            match ticks.peek() {
+                Some(_) => {
+                    let delta = ticks.next().expect("peeked value should exist");
+                    let current_tick = next_tick;
+
+                    current_liquidity += delta;
+                    next_tick += spacing;
+
+                    deltas.update(
+                        current_liquidity.clone(),
+                        Self::tick_to_price(current_tick),
+                        Self::tick_to_price(next_tick),
+                    );
+                }
+                None => {
+                    deltas.update(
+                        current_liquidity.clone(),
+                        Self::tick_to_price(next_tick),
+                        target_sqrt_price,
+                    );
+
+                    return Ok(deltas);
+                }
+            }
+        }
     }
 }
 

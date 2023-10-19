@@ -1,4 +1,4 @@
-use crate::pool::{Deltas, V3Pool, V3PoolError};
+use crate::pool::{V3Pool, V3PoolError};
 use rug::{ops::Pow, Float};
 
 pub enum Token {
@@ -48,97 +48,16 @@ impl<'pool, P: V3Pool> PoolPrice<'pool, P> {
 /// It provides some helper functions for getting the price of the pool in "human readable" form
 ///
 /// as well as provides an interface for fetching this in some target quote currency
+#[async_trait::async_trait]
 pub trait Numeraire: V3Pool + Sized {
-    fn pool_price(&self) -> Result<PoolPrice<Self>, V3PoolError<Self::BackendError>> {
-        let price = self.sqrt_price()?.pow(2);
+    async fn pool_price(&self) -> Result<PoolPrice<Self>, V3PoolError<Self::BackendError>> {
+        let price = self.sqrt_price().await?.pow(2);
 
         let exp = -(self.token1_decimals() as i16 - self.token0_decimals() as i16);
 
         let price = price * Float::with_val(100, 10).pow(exp);
 
         Ok(PoolPrice::new(self, price, Token::One))
-    }
-
-    /// Returns the amount of token0 and token1 needed to move the pool price to the target price
-    /// price_of_0_in_1 should not include the underlying nominal units
-    fn amounts_to_move_price(
-        &self,
-        new_price: PoolPrice<Self>,
-    ) -> Result<Deltas, V3PoolError<Self::BackendError>> {
-        let mut spacing = self.tick_spacing() as i32;
-        let mut current_liquidity = self.current_liquidity()?;
-
-        let current_sqrt_price = self.sqrt_price()?;
-        let target_sqrt_price = new_price.into_pool_price_float().sqrt();
-
-        let current_lower_tick = Self::price_to_tick(self.sqrt_price()?, self.tick_spacing());
-        let target_lower_tick = Self::price_to_tick(target_sqrt_price.clone(), self.tick_spacing());
-
-        let mut deltas = Deltas::new();
-        let mut next_tick: i32 = Default::default();
-
-        let ticks = if current_lower_tick < target_lower_tick {
-            // ending will be the lower tick of where the target price is
-            // starting will be the upper tick of the current price is
-
-            next_tick = current_lower_tick + spacing;
-
-            deltas.update(
-                current_liquidity.clone(),
-                current_sqrt_price,
-                Self::tick_to_price(next_tick),
-            );
-
-            self.tick_range(next_tick, target_lower_tick)?
-        } else if current_lower_tick > target_lower_tick {
-            // ending will be the upper tick of where the target price is
-            // starting will be the lower tick of the current price
-
-            next_tick = current_lower_tick;
-
-            deltas.update(
-                current_liquidity.clone(),
-                current_sqrt_price,
-                Self::tick_to_price(next_tick),
-            );
-
-            let ticks = self.tick_range(current_lower_tick, target_lower_tick + spacing)?;
-
-            spacing = -spacing;
-
-            ticks
-        } else {
-            // equal case
-            self.tick_range(current_lower_tick, current_lower_tick)?
-        };
-
-        let mut ticks = ticks.into_iter().peekable();
-        loop {
-            match ticks.peek() {
-                Some(_) => {
-                    let delta = ticks.next().expect("peeked value should exist");
-                    let current_tick = next_tick;
-
-                    current_liquidity += delta;
-                    next_tick += spacing;
-
-                    deltas.update(
-                        current_liquidity.clone(),
-                        Self::tick_to_price(current_tick),
-                        Self::tick_to_price(next_tick),
-                    );
-                }
-                None => {
-                    deltas.update(
-                        current_liquidity.clone(),
-                        Self::tick_to_price(next_tick),
-                        target_sqrt_price,
-                    );
-
-                    return Ok(deltas);
-                }
-            }
-        }
     }
 }
 

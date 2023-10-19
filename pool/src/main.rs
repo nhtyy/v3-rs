@@ -25,29 +25,26 @@ async fn main() {
         middleware.clone(),
     ));
 
-    let handle = std::thread::spawn(move || {
-        let factory = factory.clone();
+    let pool = factory
+        .pool(
+            mainnet_usdc.parse().unwrap(),
+            mainnet_weth.parse().unwrap(),
+            pool::FeeTier::Mid,
+        )
+        .await
+        .unwrap();
 
-        let pool = factory
-            .pool(
-                mainnet_usdc.parse().unwrap(),
-                mainnet_weth.parse().unwrap(),
-                pool::FeeTier::Mid,
-            )
-            .unwrap();
+    let res = if pool.token0() == mainnet_usdc.parse().unwrap() {
+        pool.pool_price()
+            .await
+            .expect("pool price")
+            .price_in(numeraire::Token::Zero)
+    } else {
+        pool.pool_price()
+            .await
+            .expect("pool price")
+            .price_in(numeraire::Token::One)
+    };
 
-        if pool.token0() == mainnet_usdc.parse().unwrap() {
-            return pool
-                .pool_price()
-                .expect("pool price")
-                .price_in(numeraire::Token::Zero);
-        } else {
-            return pool
-                .pool_price()
-                .expect("pool price")
-                .price_in(numeraire::Token::One);
-        }
-    });
-
-    println!("{:?}", handle.join().unwrap())
+    println!("{}", res);
 }

@@ -35,21 +35,16 @@ impl<M: Middleware + 'static> Factory<M> {
     /// the pool between threads.
     ///
     /// should be ran inside its own thread as it blocks whatever thread it was instantiated on
-    pub fn pool(
+    pub async fn pool(
         &self,
         first_token: Address,
         second_token: Address,
         fee: FeeTier,
     ) -> Result<Pool<M>, V3PoolError<ContractError<M>>> {
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .expect("failed to create new runtime");
-
-        let address = rt.block_on(self.pool_address(first_token, second_token, fee))?;
+        let address = self.pool_address(first_token, second_token, fee).await?;
 
         let bindings = V3PoolContract::new(address, self.middleware.clone());
 
-        Ok(Pool::new(bindings, self.middleware.clone(), rt, fee)?)
+        Ok(Pool::new(bindings, self.middleware.clone(), fee).await?)
     }
 }
