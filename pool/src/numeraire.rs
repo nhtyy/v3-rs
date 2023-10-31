@@ -1,6 +1,7 @@
 use crate::pool::{V3Pool, V3PoolError};
 use rug::{ops::Pow, Float};
 
+#[derive(Clone, Copy, Debug)]
 pub enum Token {
     Zero,
     One,
