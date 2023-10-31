@@ -1,7 +1,8 @@
 use crate::numeraire::PoolPrice;
 pub use ethers::types::{Address, I256, U256};
 use rug::{float::ParseFloatError, ops::Pow, Float};
-use std::error::Error;
+use std::collections::{hash_map::Entry, HashMap};
+use std::{error::Error, ops::Deref};
 
 pub type Tick = i32;
 
@@ -15,8 +16,17 @@ pub enum V3PoolError<E: Error> {
 /// [Deltas] is a simple struct that holds some deltas of token0 and token1
 #[derive(Debug, Clone)]
 pub struct Deltas {
-    pub token0_delta: Float,
-    pub token1_delta: Float,
+    token0: Address,
+    token1: Address,
+    amounts: HashMap<Address, Float>,
+}
+
+impl Deref for Deltas {
+    type Target = HashMap<Address, Float>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.amounts
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -54,17 +64,33 @@ impl SwapMath for Deltas {}
 impl<P: V3Pool> SwapMath for P {}
 
 impl Deltas {
-    pub fn new() -> Self {
+    pub fn new(token0: Address, token1: Address) -> Self {
+        let mut map: HashMap<Address, Float> = HashMap::new();
+        map.insert(token0, Float::with_val(100, 0));
+        map.insert(token1, Float::with_val(100, 0));
+
         Self {
-            token0_delta: Float::with_val(100, 0),
-            token1_delta: Float::with_val(100, 0),
+            token0,
+            token1,
+            amounts: map,
         }
     }
 
     pub fn update(&mut self, liquidity: Float, sqrt_price: Float, target_price: Float) {
-        self.token0_delta +=
+        let token0_entry = self
+            .amounts
+            .get_mut(&self.token0)
+            .expect("token0 should exist");
+
+        *token0_entry +=
             Self::token0_delta(liquidity.clone(), sqrt_price.clone(), target_price.clone());
-        self.token1_delta += Self::token1_delta(liquidity, sqrt_price, target_price);
+
+        let token1_entry = self
+            .amounts
+            .get_mut(&self.token1)
+            .expect("token1 should exist");
+
+        *token1_entry += Self::token1_delta(liquidity, sqrt_price, target_price);
     }
 }
 
@@ -180,7 +206,7 @@ pub trait V3Pool: SwapMath + Sized {
         let current_lower_tick = Self::price_to_tick(self.sqrt_price().await?, self.tick_spacing());
         let target_lower_tick = Self::price_to_tick(target_sqrt_price.clone(), self.tick_spacing());
 
-        let mut deltas = Deltas::new();
+        let mut deltas = Deltas::new(self.token0(), self.token1());
         let mut next_tick: i32 = Default::default();
 
         let ticks = if current_lower_tick < target_lower_tick {
