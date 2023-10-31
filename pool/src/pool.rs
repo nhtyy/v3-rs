@@ -2,6 +2,7 @@ use crate::numeraire::PoolPrice;
 pub use ethers::types::{Address, I256, U256};
 use rug::{float::ParseFloatError, ops::Pow, Float};
 use std::collections::{hash_map::Entry, HashMap};
+use std::ops::DerefMut;
 use std::{error::Error, ops::Deref};
 
 pub type Tick = i32;
@@ -26,6 +27,12 @@ impl Deref for Deltas {
 
     fn deref(&self) -> &Self::Target {
         &self.amounts
+    }
+}
+
+impl DerefMut for Deltas {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.amounts
     }
 }
 
