@@ -207,8 +207,13 @@ pub trait V3Pool: SwapMath + Sized {
         let mut spacing = self.tick_spacing() as i32;
         let mut current_liquidity = self.current_liquidity().await?;
 
-        let current_sqrt_price = self.sqrt_price().await?;
+        tracing::debug!("current L: {:?}", current_liquidity);
+
+        let mut current_sqrt_price = self.sqrt_price().await?;
         let target_sqrt_price = new_price.into_pool_price_float().sqrt();
+
+        tracing::debug!("current sqrt price: {:?}", current_sqrt_price);
+        tracing::debug!("target sqrt price: {:?}", target_sqrt_price);
 
         let current_lower_tick = Self::price_to_tick(self.sqrt_price().await?, self.tick_spacing());
         let target_lower_tick = Self::price_to_tick(target_sqrt_price.clone(), self.tick_spacing());
@@ -217,6 +222,7 @@ pub trait V3Pool: SwapMath + Sized {
         let mut next_tick: i32 = Default::default();
 
         let ticks = if current_lower_tick < target_lower_tick {
+            tracing::debug!("current lower tick is less than target lower tick");
             // ending will be the lower tick of where the target price is
             // starting will be the upper tick of the current price is
 
@@ -224,7 +230,7 @@ pub trait V3Pool: SwapMath + Sized {
 
             deltas.update(
                 current_liquidity.clone(),
-                current_sqrt_price,
+                current_sqrt_price.clone(),
                 Self::tick_to_price(next_tick),
             );
 
@@ -237,50 +243,46 @@ pub trait V3Pool: SwapMath + Sized {
 
             deltas.update(
                 current_liquidity.clone(),
-                current_sqrt_price,
+                current_sqrt_price.clone(),
                 Self::tick_to_price(next_tick),
             );
 
             let ticks = self
-                .tick_range(current_lower_tick, target_lower_tick + spacing)
+                .tick_range(next_tick, target_lower_tick + spacing)
                 .await?;
 
             spacing = -spacing;
 
             ticks
         } else {
+            tracing::debug!("current lower tick is equal to target lower tick");
             // equal case
             self.tick_range(current_lower_tick, current_lower_tick)
                 .await?
         };
 
-        let mut ticks = ticks.into_iter().peekable();
-        loop {
-            match ticks.peek() {
-                Some(_) => {
-                    let delta = ticks.next().expect("peeked value should exist");
-                    let current_tick = next_tick;
+        let mut ticks = ticks.into_iter();
+        while let Some(delta) = ticks.next() {
+            let current_tick = next_tick;
 
-                    current_liquidity += delta;
-                    next_tick += spacing;
+            current_liquidity += delta;
+            next_tick += spacing;
+            current_sqrt_price = Self::tick_to_price(current_tick);
 
-                    deltas.update(
-                        current_liquidity.clone(),
-                        Self::tick_to_price(current_tick),
-                        Self::tick_to_price(next_tick),
-                    );
-                }
-                None => {
-                    deltas.update(
-                        current_liquidity.clone(),
-                        Self::tick_to_price(next_tick),
-                        target_sqrt_price,
-                    );
-
-                    return Ok(deltas);
-                }
-            }
+            deltas.update(
+                current_liquidity.clone(),
+                current_sqrt_price.clone(),
+                Self::tick_to_price(next_tick),
+            );
         }
+
+        deltas.update(
+            current_liquidity.clone(),
+            current_sqrt_price,
+            target_sqrt_price.clone(),
+        );
+
+        Ok(deltas)
     }
 }
 
