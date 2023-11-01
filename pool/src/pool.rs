@@ -43,6 +43,18 @@ pub enum FeeTier {
     Max = 10000,
 }
 
+impl FeeTier {
+    pub fn as_u24_bytes(&self) -> Vec<u8> {
+        let temp = match self {
+            FeeTier::Min => 500_u64.to_be_bytes(),
+            FeeTier::Mid => 3000_u64.to_be_bytes(),
+            FeeTier::Max => 10000_u64.to_be_bytes(),
+        };
+
+        temp[5..].to_vec()
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum TickSpacing {
     Min = 10,
