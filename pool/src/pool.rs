@@ -111,6 +111,16 @@ impl Deltas {
 
         *token1_entry += Self::token1_delta(liquidity, sqrt_price, target_price);
     }
+
+    pub fn apply_fee(&mut self, fee: u64) {
+        self.values_mut().for_each(|v| {
+            if !v.is_sign_negative() {
+                let fee = Float::with_val(100, fee);
+                let decay = 1 - fee;
+                *v /= decay;
+            }
+        })
+    }
 }
 
 impl FeeTier {
@@ -293,6 +303,8 @@ pub trait V3Pool: SwapMath + Sized {
             current_sqrt_price,
             target_sqrt_price.clone(),
         );
+
+        deltas.apply_fee(self.fee().as_bp());
 
         Ok(deltas)
     }
