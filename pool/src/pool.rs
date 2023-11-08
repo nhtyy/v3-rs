@@ -115,11 +115,10 @@ impl Deltas {
     pub fn apply_fee(&mut self, fee: u64) {
         self.values_mut().for_each(|v| {
             if !v.is_sign_negative() {
-                let fee = Float::with_val(100, fee);
-                tracing::info!("applying fee: {}", &fee);
-                let decay = 1 - fee;
-                tracing::info!("decay: {}", &decay);
-                *v /=  decay;
+                let fee_bp = Float::with_val(100, fee);
+                let fee_bp = fee_bp / 10000;
+                let decay = 1 - fee_bp;
+                *v /= decay;
             }
         })
     }
