@@ -116,8 +116,10 @@ impl Deltas {
         self.values_mut().for_each(|v| {
             if !v.is_sign_negative() {
                 let fee = Float::with_val(100, fee);
+                tracing::info!("applying fee: {}", &fee);
                 let decay = 1 - fee;
-                *v /= decay;
+                tracing::info!("decay: {}", &decay);
+                *v /=  decay;
             }
         })
     }
