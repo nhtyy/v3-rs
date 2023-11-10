@@ -12,7 +12,7 @@ pub use ierc20::*;
 pub mod ierc20 {
     const _: () = {
         ::core::include_bytes!(
-            "/Users/nuhhtyy/Work/Other/v3-rs/bindings/src/abis/ERC20.json"
+            "./abis/ERC20.json"
         );
     };
     #[rustfmt::skip]

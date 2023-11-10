@@ -12,7 +12,7 @@ pub use i_uniswap_v3_factory::*;
 pub mod i_uniswap_v3_factory {
     const _: () = {
         ::core::include_bytes!(
-            "/Users/nuhhtyy/Work/Other/v3-rs/bindings/src/abis/UniswapV3Factory.json"
+            "./abis/UniswapV3Factory.json"
         );
     };
     #[rustfmt::skip]

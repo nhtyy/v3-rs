@@ -12,7 +12,7 @@ pub use i_uniswap_v3_pool::*;
 pub mod i_uniswap_v3_pool {
     const _: () = {
         ::core::include_bytes!(
-            "/Users/nuhhtyy/Work/Other/v3-rs/bindings/src/abis/UniswapV3Pool.json"
+            "./abis/UniswapV3Pool.json"
         );
     };
     #[rustfmt::skip]
