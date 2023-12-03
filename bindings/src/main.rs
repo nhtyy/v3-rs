@@ -14,8 +14,6 @@ fn rust_file_generation(source: &str, destination: &str, name: &str) -> Result<(
 }
 
 fn main() {
-    print!("hello!");
-
     rust_file_generation(
         "src/abis/UniswapV3Factory.json",
         "src/IUniswapV3Factory.rs",

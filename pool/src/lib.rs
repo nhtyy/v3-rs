@@ -9,3 +9,7 @@ pub mod numeraire;
 
 /// Where the [crate::pool::V3Pool] trait is defined
 pub mod pool;
+
+pub mod position;
+pub use position::PositionsReturn as Position;
+pub use position::PositionManager;

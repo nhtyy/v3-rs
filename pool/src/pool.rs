@@ -1,4 +1,7 @@
+use crate::position::PositionManager;
 use crate::numeraire::PoolPrice;
+use crate::position::Balances;
+use ethers::providers::Middleware;
 pub use ethers::types::{Address, I256, U256};
 use rug::{float::ParseFloatError, ops::Pow, Float};
 use std::collections::{hash_map::Entry, HashMap};
@@ -62,6 +65,44 @@ pub enum TickSpacing {
     Max = 200,
 }
 
+pub trait LiquidityMath {
+    fn real_token0_from_l(sqrt_current: Float, sqrt_upper: Float, l: Float) -> Float {
+        let inverse_current = 1 / sqrt_current;
+        let inverse_upper = 1 / sqrt_upper;
+
+        let real: Float = l * (inverse_current - inverse_upper);
+
+        if real.is_sign_negative() {
+            // return 0
+            Float::with_val(100, 0)
+        } else {
+            real
+        }
+    }
+
+    fn real_token1_from_l(sqrt_currnet: Float, sqrt_lower: Float, l: Float) -> Float {
+        let real = l * (sqrt_currnet - sqrt_lower);
+
+        if real.is_sign_negative() {
+            // return 0
+            Float::with_val(100, 0)
+        } else {
+            real
+        }
+    }
+
+    fn liqudity_from_real_token1(sqrt_current: Float, sqrt_lower: Float, token1: Float) -> Float {
+        token1 / (sqrt_current - sqrt_lower)
+    }
+
+    fn liqudity_from_real_token0(sqrt_current: Float, sqrt_upper: Float, token0: Float) -> Float {
+        let inverse_current = 1 / sqrt_current;
+        let inverse_upper = 1 / sqrt_upper;
+
+        token0 / (inverse_current - inverse_upper)
+    }
+}
+
 /// [SwapMath] is implemented on all [V3Pool]s as well as some other types
 pub trait SwapMath {
     fn token0_delta(liquidty: Float, sqrt_price: Float, target_price: Float) -> Float {
@@ -81,6 +122,9 @@ impl SwapMath for Deltas {}
 
 // apply the trait to all types that implement V3Pool
 impl<P: V3Pool> SwapMath for P {}
+
+// apply the trait to all types that implement V3Pool
+impl<P: V3Pool> LiquidityMath for P {}
 
 impl Deltas {
     pub fn new(token0: Address, token1: Address) -> Self {
@@ -112,7 +156,7 @@ impl Deltas {
         *token1_entry += Self::token1_delta(liquidity, sqrt_price, target_price);
     }
 
-    pub fn apply_fee(&mut self, fee: u64) {
+    pub fn apply_fee(&mut self, fee: u32) {
         self.values_mut().for_each(|v| {
             if !v.is_sign_negative() {
                 let fee_bp = Float::with_val(100, fee);
@@ -133,11 +177,19 @@ impl FeeTier {
         }
     }
 
-    pub fn as_bp(&self) -> u64 {
+    pub fn as_bp(&self) -> u32 {
         match self {
             FeeTier::Min => 5,
             FeeTier::Mid => 30,
             FeeTier::Max => 100,
+        }
+    }
+
+    pub fn as_scaled_bp(&self) -> u32 {
+        match self {
+            FeeTier::Min => 500,
+            FeeTier::Mid => 3000,
+            FeeTier::Max => 10000,
         }
     }
 }
@@ -158,9 +210,9 @@ impl TickSpacing {
 ///
 /// it also provides some low level price functionality, that is built upon by other traits such as [crate::numeraire::Numeraire]
 #[async_trait::async_trait]
-pub trait V3Pool: SwapMath + Sized {
+pub trait V3Pool: Send + Sync + Sized + 'static {
     type Ticks: IntoIterator<Item = Float>;
-    type BackendError: Error;
+    type BackendError: Error + Send + Sync + 'static;
 
     fn fee(&self) -> FeeTier;
     fn token0(&self) -> Address;
@@ -200,6 +252,13 @@ pub trait V3Pool: SwapMath + Sized {
         Ok(price / Self::x96())
     }
 
+    fn price_to_tick_no_rounding(price: Float) -> Tick {
+        // change of base log[1.0001](price)
+        (price.ln() / Float::with_val(100, 1.0001).ln())
+            .to_i32_saturating()
+            .expect("Failed to convert tick to i32")
+    }
+
     /// represnets the LOWER TICK of a given price
     /// in other words this function rounds down with respect to the tick spacing
     fn price_to_tick(price: Float, tick_spacing: TickSpacing) -> Tick {
@@ -219,6 +278,10 @@ pub trait V3Pool: SwapMath + Sized {
     fn tick_to_price(tick: Tick) -> Float {
         let base = Float::with_val(100, 1.0001);
         base.pow(tick)
+    }
+
+    async fn lp_balance<M: Middleware + 'static>(&self, manager: &PositionManager<M>, who: Address) -> anyhow::Result<Balances> {
+        manager.total_positions_balance(self, who).await
     }
 
     /// Returns the amount of token0 and token1 needed to move the pool price to the target price

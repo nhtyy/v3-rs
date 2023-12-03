@@ -16,3 +16,5 @@ futures = "0.3.17"
 lazy_static = "1.4.0"
 async-trait = "0.1.74"
 tracing = "0.1.40"
+serde = {version = "1.0.193", features = ["derive"]}
+anyhow = "1.0.75"
