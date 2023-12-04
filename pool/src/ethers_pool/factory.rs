@@ -43,6 +43,10 @@ impl<M: Middleware + 'static> Factory<M> {
     ) -> Result<Pool<M>, V3PoolError<ContractError<M>>> {
         let address = self.pool_address(first_token, second_token, fee).await?;
 
+        if address == Address::zero() {
+            return Err(V3PoolError::PoolNotFound);
+        }
+
         let bindings = V3PoolContract::new(address, self.middleware.clone());
 
         Ok(Pool::new(bindings, self.middleware.clone(), fee).await?)

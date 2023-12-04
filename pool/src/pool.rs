@@ -15,6 +15,7 @@ pub enum V3PoolError<E: Error> {
     ParseError(ParseFloatError),
     BackendError(E),
     BadRange(Tick, Tick, i32),
+    PoolNotFound,
 }
 
 /// [Deltas] is a simple struct that holds some deltas of token0 and token1
@@ -383,6 +384,7 @@ impl<T: Error> std::fmt::Display for V3PoolError<T> {
                 "V3PoolError::BadRange starting: {}, ending: {}, spacing: {}",
                 starting, ending, spacing
             ),
+            V3PoolError::PoolNotFound => write!(f, "V3PoolError::PoolNotFound"),
         }
     }
 }
