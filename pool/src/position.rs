@@ -19,9 +19,9 @@ abigen!(
 
 #[derive(Debug, Clone)]
 pub struct Balances {
-    token0: Address,
-    token1: Address,
-    amounts: HashMap<Address, Float>
+    pub token0: Address,
+    pub token1: Address,
+    pub amounts: HashMap<Address, Float>
 }
 
 fn float_zero() -> Float {
