@@ -26,7 +26,7 @@ impl<M: Middleware + 'static> Factory<M> {
     ) -> Result<Address, V3PoolError<ContractError<M>>> {
         Ok(self
             .factory
-            .get_pool(first_token, second_token, fee as u32)
+            .get_pool(first_token, second_token, fee.as_scaled_bp())
             .call()
             .await?)
     }
