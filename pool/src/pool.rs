@@ -41,9 +41,9 @@ impl DerefMut for Deltas {
 
 #[derive(Debug, Clone, Copy)]
 pub enum FeeTier {
-    Min = 500,
-    Mid = 3000,
-    Max = 10000,
+    Min,
+    Mid,
+    Max,
 }
 
 impl FeeTier {
@@ -55,6 +55,30 @@ impl FeeTier {
         };
 
         temp[5..].to_vec()
+    }
+
+    pub fn as_spacing(&self) -> TickSpacing {
+        match self {
+            FeeTier::Min => TickSpacing::Min,
+            FeeTier::Mid => TickSpacing::Mid,
+            FeeTier::Max => TickSpacing::Max,
+        }
+    }
+
+    pub fn as_bp(&self) -> u32 {
+        match self {
+            FeeTier::Min => 5,
+            FeeTier::Mid => 30,
+            FeeTier::Max => 100,
+        }
+    }
+
+    pub fn as_scaled_bp(&self) -> u32 {
+        match self {
+            FeeTier::Min => 500,
+            FeeTier::Mid => 3000,
+            FeeTier::Max => 10000,
+        }
     }
 }
 
@@ -167,33 +191,6 @@ impl Deltas {
         })
     }
 }
-
-impl FeeTier {
-    pub fn as_spacing(&self) -> TickSpacing {
-        match self {
-            FeeTier::Min => TickSpacing::Min,
-            FeeTier::Mid => TickSpacing::Mid,
-            FeeTier::Max => TickSpacing::Max,
-        }
-    }
-
-    pub fn as_bp(&self) -> u32 {
-        match self {
-            FeeTier::Min => 5,
-            FeeTier::Mid => 30,
-            FeeTier::Max => 100,
-        }
-    }
-
-    pub fn as_scaled_bp(&self) -> u32 {
-        match self {
-            FeeTier::Min => 500,
-            FeeTier::Mid => 3000,
-            FeeTier::Max => 10000,
-        }
-    }
-}
-
 impl TickSpacing {
     pub fn as_fee(tick_spacing: TickSpacing) -> FeeTier {
         match tick_spacing {
