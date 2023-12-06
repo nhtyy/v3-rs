@@ -70,10 +70,13 @@ impl<M: Middleware + 'static> V3Pool for Pool<M> {
         let mut spacing = self.tick_spacing as i32;
         let mut down: bool = false;
 
-        tracing::debug!("hi");
-
         let differnce = starting - ending;
+        let differnce = differnce.abs();
         let capactiy = differnce / spacing + 1;
+
+        tracing::trace!("getting tick range");
+        tracing::trace!("starting: {}, ending: {}, spacing: {}", starting, ending, spacing);
+        tracing::trace!("difference: {}, capacity: {}", differnce, capactiy);
 
         if differnce % (spacing as i32) != 0 {
             return Err(V3PoolError::BadRange(starting, ending, spacing));
