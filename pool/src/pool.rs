@@ -320,6 +320,7 @@ pub trait V3Pool: Send + Sync + Sized + 'static {
 
             self.tick_range(next_tick, target_lower_tick).await?
         } else if current_lower_tick > target_lower_tick {
+            tracing::debug!("current lower tick is greater than target lower tick");
             // ending will be the upper tick of where the target price is
             // starting will be the lower tick of the current price
 

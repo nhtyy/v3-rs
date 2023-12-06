@@ -6,8 +6,8 @@ use ethers::{
 };
 use futures::future::try_join_all;
 use rug::{ops::Pow, Float};
-use std::future::IntoFuture;
 use std::collections::HashMap;
+use std::future::IntoFuture;
 
 use crate::pool::V3Pool;
 
@@ -21,7 +21,7 @@ abigen!(
 pub struct Balances {
     pub token0: Address,
     pub token1: Address,
-    pub amounts: HashMap<Address, Float>
+    pub amounts: HashMap<Address, Float>,
 }
 
 fn float_zero() -> Float {
@@ -59,7 +59,11 @@ impl<M: Middleware + 'static> PositionManager<M> {
             .all_positions(owner)
             .await?
             .into_iter()
-            .filter(|pos| pos.token_0 == pool.token0() && pos.token_1 == pool.token1() && pos.fee == pool.fee().as_scaled_bp())
+            .filter(|pos| {
+                pos.token_0 == pool.token0()
+                    && pos.token_1 == pool.token1()
+                    && pos.fee == pool.fee().as_scaled_bp()
+            })
             .collect::<Vec<_>>();
 
         let sqrt_price = pool.sqrt_price().await?;
@@ -67,12 +71,9 @@ impl<M: Middleware + 'static> PositionManager<M> {
         let init = Balances {
             token0: pool.token0(),
             token1: pool.token1(),
-            amounts: vec![
-                (pool.token0(), float_zero()),
-                (pool.token1(), float_zero()),
-            ]
-            .into_iter()
-            .collect(),
+            amounts: vec![(pool.token0(), float_zero()), (pool.token1(), float_zero())]
+                .into_iter()
+                .collect(),
         };
 
         Ok(positions
@@ -210,7 +211,9 @@ mod tests {
             )
             .await?;
 
-        let balance = pos_manager.total_positions_balance(&pool, "0xE546eC3493DC18fDf34A28ff070BB0DC0662C343".parse()?).await?;
+        let balance = pos_manager
+            .total_positions_balance(&pool, "0xE546eC3493DC18fDf34A28ff070BB0DC0662C343".parse()?)
+            .await?;
 
         println!("{:?}", balance);
 

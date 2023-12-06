@@ -50,7 +50,7 @@ impl<M: Middleware + 'static> Pool<M> {
     }
 
     async fn fut_tick(&self, tick: Tick) -> Result<i128, ContractError<M>> {
-        let tick = self.pool.ticks(tick as i32).await?;
+        let tick = self.pool.ticks(tick).await?;
 
         Ok(tick.1)
     }
@@ -69,6 +69,8 @@ impl<M: Middleware + 'static> V3Pool for Pool<M> {
     ) -> Result<Self::Ticks, V3PoolError<Self::BackendError>> {
         let mut spacing = self.tick_spacing as i32;
         let mut down: bool = false;
+
+        tracing::debug!("hi");
 
         let differnce = starting - ending;
         let capactiy = differnce / spacing + 1;
