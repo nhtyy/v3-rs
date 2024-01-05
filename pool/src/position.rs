@@ -66,6 +66,8 @@ impl<M: Middleware + 'static> PositionManager<M> {
             })
             .collect::<Vec<_>>();
 
+        tracing::debug!("Positions for {:#?}:\n {:#?}", owner, positions);
+
         let sqrt_price = pool.sqrt_price().await?;
 
         let init = Balances {
