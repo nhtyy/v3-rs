@@ -54,6 +54,10 @@ impl<M: Middleware + 'static> Pool<M> {
 
         Ok(tick.1)
     }
+
+    async fn slot0(&self) -> Result<(U256, i32, u16, u16, u16, u8, bool), ContractError<M>> {
+        Ok(self.pool.slot_0().await?)
+    }
 }
 
 #[async_trait::async_trait]
@@ -122,6 +126,8 @@ impl<M: Middleware + 'static> V3Pool for Pool<M> {
 
     async fn current_liquidity(&self) -> Result<Float, V3PoolError<Self::BackendError>> {
         let liquidity = self.pool.liquidity().await?;
+
+        tracing::trace!("current liquidity: {}", liquidity);
 
         Ok(Float::with_val(100, liquidity))
     }

@@ -209,7 +209,7 @@ impl TickSpacing {
 /// it also provides some low level price functionality, that is built upon by other traits such as [crate::numeraire::Numeraire]
 #[async_trait::async_trait]
 pub trait V3Pool: Send + Sync + Sized + 'static {
-    type Ticks: IntoIterator<Item = Float>;
+    type Ticks: IntoIterator<Item = Float> + std::fmt::Debug;
     type BackendError: Error + Send + Sync + 'static;
 
     fn fee(&self) -> FeeTier;
@@ -228,6 +228,10 @@ pub trait V3Pool: Send + Sync + Sized + 'static {
     /// since tick delta should be added as price increase, a tick range can account for the opposite case
     /// if ending < starting, you can flip the signs of the deltas, implementors should ensure that you can always add these values
     /// we also let implementors handle this because they may have some optimizations for this case
+    /// 
+    /// returns deltas [starting, ending]
+    /// 
+    /// if starting == ending, returns []
     async fn tick_range(
         &self,
         starting: Tick,
@@ -299,8 +303,11 @@ pub trait V3Pool: Send + Sync + Sized + 'static {
         tracing::debug!("current sqrt price: {:?}", current_sqrt_price);
         tracing::debug!("target sqrt price: {:?}", target_sqrt_price);
 
-        let current_lower_tick = Self::price_to_tick(self.sqrt_price().await?, self.tick_spacing());
-        let target_lower_tick = Self::price_to_tick(target_sqrt_price.clone(), self.tick_spacing());
+        let current_lower_tick = Self::price_to_tick(current_sqrt_price.clone().pow(2_u32), self.tick_spacing());
+        let target_lower_tick = Self::price_to_tick(target_sqrt_price.clone().pow(2_u32), self.tick_spacing());
+
+        tracing::trace!("current_lower_tick {:?}", current_lower_tick);
+        tracing::trace!("target_lower_tick {:?}", target_lower_tick);
 
         let mut deltas = Deltas::new(self.token0(), self.token1());
         let mut next_tick: i32 = Default::default();
@@ -315,11 +322,14 @@ pub trait V3Pool: Send + Sync + Sized + 'static {
             deltas.update(
                 current_liquidity.clone(),
                 current_sqrt_price.clone(),
-                Self::tick_to_price(next_tick),
+                Self::tick_to_price(next_tick).sqrt(),
             );
+
+            current_sqrt_price = Self::tick_to_price(next_tick);
 
             self.tick_range(next_tick, target_lower_tick).await?
         } else if current_lower_tick > target_lower_tick {
+            tracing::debug!("current lower tick is greater than target lower tick");
             // ending will be the upper tick of where the target price is
             // starting will be the lower tick of the current price
 
@@ -328,7 +338,7 @@ pub trait V3Pool: Send + Sync + Sized + 'static {
             deltas.update(
                 current_liquidity.clone(),
                 current_sqrt_price.clone(),
-                Self::tick_to_price(next_tick),
+                Self::tick_to_price(next_tick).sqrt(),
             );
 
             let ticks = self
@@ -340,10 +350,12 @@ pub trait V3Pool: Send + Sync + Sized + 'static {
             ticks
         } else {
             tracing::debug!("current lower tick is equal to target lower tick");
-            // equal case
+            // equal case, should be empty
             self.tick_range(current_lower_tick, current_lower_tick)
                 .await?
         };
+
+        tracing::trace!(target = "n", "{:?}", ticks);
 
         let mut ticks = ticks.into_iter();
         while let Some(delta) = ticks.next() {
@@ -351,12 +363,12 @@ pub trait V3Pool: Send + Sync + Sized + 'static {
 
             current_liquidity += delta;
             next_tick += spacing;
-            current_sqrt_price = Self::tick_to_price(current_tick);
+            current_sqrt_price = Self::tick_to_price(current_tick).sqrt();
 
             deltas.update(
                 current_liquidity.clone(),
                 current_sqrt_price.clone(),
-                Self::tick_to_price(next_tick),
+                Self::tick_to_price(next_tick).sqrt(),
             );
         }
 
