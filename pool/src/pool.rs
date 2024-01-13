@@ -325,8 +325,6 @@ pub trait V3Pool: Send + Sync + Sized + 'static {
                 Self::tick_to_price(next_tick).sqrt(),
             );
 
-            current_sqrt_price = Self::tick_to_price(next_tick);
-
             self.tick_range(next_tick, target_lower_tick).await?
         } else if current_lower_tick > target_lower_tick {
             tracing::debug!("current lower tick is greater than target lower tick");
