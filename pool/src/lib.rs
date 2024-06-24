@@ -13,3 +13,9 @@ pub use pool::*;
 pub mod position;
 pub use position::PositionsReturn as Position;
 pub use position::PositionManager;
+
+pub mod math;
+
+pub mod error;
+
+pub mod types;

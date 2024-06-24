@@ -8,7 +8,6 @@ pub enum Token {
 }
 
 pub struct PoolPrice<'pool, P: V3Pool> {
-    /// the price of token0 in terms of token1, accounting for the decimals of the pool
     price: Float,
 
     /// the pool that this price is for

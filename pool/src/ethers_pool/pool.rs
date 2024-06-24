@@ -160,9 +160,3 @@ impl<M: Middleware + 'static> V3Pool for Pool<M> {
         self.token1_decimals
     }
 }
-
-impl<M: Middleware> From<ContractError<M>> for V3PoolError<ContractError<M>> {
-    fn from(err: ContractError<M>) -> Self {
-        V3PoolError::BackendError(err)
-    }
-}
