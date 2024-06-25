@@ -1,16 +1,36 @@
 use std::error::Error;
 use rug::float::ParseFloatError;
 
+use crate::math::BoundsError;
+
 #[derive(Debug, Clone)]
 pub enum V3PoolError<E: Error> {
     ParseError(ParseFloatError),
     BackendError(E),
+    BoundsError(BoundsError),
     PoolNotFound,
 }
 
 impl<E: Error> V3PoolError<E> {
     pub fn backend_error(e: E) -> Self {
         V3PoolError::BackendError(e)
+    }
+}
+
+impl std::fmt::Display for V3PoolError<ParseFloatError> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            V3PoolError::ParseError(e) => write!(f, "V3PoolError::ParseError: {}", e),
+            V3PoolError::BackendError(e) => write!(f, "V3PoolError::BackendError: {}", e),
+            V3PoolError::BoundsError(e) => write!(f, "V3PoolError::BoundsError: {}", e),
+            V3PoolError::PoolNotFound => write!(f, "V3PoolError: No Pool found"),
+        }
+    }
+}
+
+impl<E: Error> From<BoundsError> for V3PoolError<E> {
+    fn from(e: BoundsError) -> Self {
+        V3PoolError::BoundsError(e)
     }
 }
 

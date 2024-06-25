@@ -3,7 +3,6 @@ pub mod price;
 pub mod swap;
 
 use crate::error::V3PoolError;
-use crate::math::swap::{token0_delta, token1_delta};
 use crate::math::{SqrtPrice, Tick};
 
 pub use ethers::types::{Address, I256, U256};
@@ -90,11 +89,11 @@ pub trait V3Pool: Send + Sync + Sized + 'static {
     /// An ordred stream of ticks
     type Ticks: Stream<Item = Result<Float, Self::BackendError>> + Send + Sync + 'static;
 
-    fn fee(&self) -> FeeTier;
-    fn token0(&self) -> Address;
-    fn token1(&self) -> Address;
-    fn token0_decimals(&self) -> u8;
-    fn token1_decimals(&self) -> u8;
+    fn fee(&self) -> &FeeTier;
+    fn token0(&self) -> &Address;
+    fn token1(&self) -> &Address;
+    fn token0_decimals(&self) -> &u8;
+    fn token1_decimals(&self) -> &u8;
 
     fn x96() -> Float {
         Float::with_val(100, 2u128.pow(96))

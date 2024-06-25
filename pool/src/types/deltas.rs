@@ -5,7 +5,8 @@ use crate::math::SqrtPrice;
 use crate::types::amount::TokenAmount;
 use crate::V3Pool;
 
-/// [Deltas] is a simple struct that holds some deltas of token0 and token1
+/// The change change in token of a pool because of some operation
+#[derive(Clone)]
 pub struct Deltas<'a, P: V3Pool> {
     pool: &'a P,
     token0_amount: TokenAmount<'a, P>,
@@ -13,6 +14,14 @@ pub struct Deltas<'a, P: V3Pool> {
 }
 
 impl<'a, P: V3Pool> Deltas<'a, P> {
+    pub fn token0_amount(&self) -> &TokenAmount<P> {
+        &self.token0_amount
+    }
+
+    pub fn token1_amount(&self) -> &TokenAmount<P> {
+        &self.token1_amount
+    }
+
     pub fn new(pool: &'a P) -> Self {
         Self {
             pool,
@@ -46,24 +55,30 @@ impl<'a, P: V3Pool> Deltas<'a, P> {
                 let fee = fee / 10000;
                 let decay = 1 - fee;
 
-                Some(TokenAmount::from_scaled(
-                    self.pool,
-                    crate::Token::One,
-                    self.token1_amount.clone() / decay,
-                ))
+                // Saftey: amounts came from valid token amounts
+                unsafe {
+                    Some(TokenAmount::from_scaled(
+                        self.pool,
+                        crate::Token::One,
+                        self.token1_amount.clone() / decay,
+                    ))
+                }
             }
             (false, true) => {
                 let fee = Float::with_val(100, fee_bp);
                 let fee = fee / 10000;
                 let decay = 1 - fee;
 
-                Some(TokenAmount::from_scaled(
-                    self.pool,
-                    crate::Token::Zero,
-                    self.token0_amount.clone() / decay,
-                ))
+                // Saftey: amounts came from valid token amounts
+                unsafe {
+                    Some(TokenAmount::from_scaled(
+                        self.pool,
+                        crate::Token::Zero,
+                        self.token0_amount.clone() / decay,
+                    ))
+                }
             }
-            (_, _) => unreachable!("Got two non zero same sign deltas"),
+            (_, _) => unreachable!("Got two non zero same sign deltas, this is a bug"),
         }
     }
 }

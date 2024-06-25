@@ -7,6 +7,11 @@ use rug::Float;
 use crate::Token;
 use crate::V3Pool;
 
+#[derive(Clone)]
+/// A token amount that belongs to a pool
+/// 
+/// There are helpers for converting between human readable amounts and scaled amounts
+/// and display and debug implementations return the human readable amount
 pub struct TokenAmount<'a, P: V3Pool> {
     pool: &'a P,
     token: Token,
@@ -15,6 +20,22 @@ pub struct TokenAmount<'a, P: V3Pool> {
 
 impl<'a, P: V3Pool> TokenAmount<'a, P> {
     #[inline]
+    pub fn token(&self) -> &Token {
+        &self.token
+    }
+
+    #[inline]
+    pub fn amount(&self) -> &Float {
+        &self.amount
+    }
+
+    #[inline]
+    pub fn human_readable_amount(&self) -> Float {
+        Self::scale_down(self.pool, self.token, self.amount.clone())
+    }
+
+    #[inline]
+    /// Create a new TokenAmount with a zero amount
     pub fn zero(pool: &'a P, token: Token) -> Self {
         Self {
             pool,
@@ -24,7 +45,8 @@ impl<'a, P: V3Pool> TokenAmount<'a, P> {
     }
 
     #[inline]
-    pub fn from_human_readable(pool: &'a P, token: Token, amount: Float) -> Self {
+    /// Create a token amount from a human readable amount
+    pub fn from_amount(pool: &'a P, token: Token, amount: Float) -> Self {
         Self {
             pool,
             token,
@@ -33,7 +55,8 @@ impl<'a, P: V3Pool> TokenAmount<'a, P> {
     }
 
     #[inline]
-    pub fn from_scaled(pool: &'a P, token: Token, amount: Float) -> Self {
+    /// Create a token amount from a scaled amount
+    pub unsafe fn from_scaled(pool: &'a P, token: Token, amount: Float) -> Self {
         Self {
             pool,
             token,
@@ -41,7 +64,8 @@ impl<'a, P: V3Pool> TokenAmount<'a, P> {
         }
     }
 
-    pub fn scale_up(pool: &P, token: Token, amount: Float) -> Float {
+    /// Scale up a human readable amount to a scaled amount
+    fn scale_up(pool: &P, token: Token, amount: Float) -> Float {
         let exp = match token {
             Token::Zero => pool.token0_decimals(),
             Token::One => pool.token1_decimals(),
@@ -50,7 +74,7 @@ impl<'a, P: V3Pool> TokenAmount<'a, P> {
         amount * Float::with_val(100, 10).pow(exp)
     }
 
-    pub fn scale_down(pool: &P, token: Token, amount: Float) -> Float {
+    fn scale_down(pool: &P, token: Token, amount: Float) -> Float {
         let exp = match token {
             Token::Zero => pool.token0_decimals(),
             Token::One => pool.token1_decimals(),
@@ -77,6 +101,8 @@ impl<'a, P: V3Pool> std::fmt::Debug for TokenAmount<'a, P> {
             .field("token", &self.token)
             .field("token0", &self.pool.token0())
             .field("token1", &self.pool.token1())
+            .field("token0_decimals", &self.pool.token0_decimals())
+            .field("token1_decimals", &self.pool.token1_decimals())
             .finish()
     }
 }
