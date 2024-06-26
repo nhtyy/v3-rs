@@ -1,9 +1,9 @@
 use rug::ops::Pow;
 use rug::Float;
 
+use super::Token;
 use crate::math::BoundsError;
 use crate::math::Price;
-use crate::Token;
 use crate::V3Pool;
 
 /// A price that belongs to a pool that automatic accounts for the internal decimals

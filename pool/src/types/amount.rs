@@ -4,7 +4,7 @@ use std::ops::DerefMut;
 use rug::ops::Pow;
 use rug::Float;
 
-use crate::Token;
+use super::Token;
 use crate::V3Pool;
 
 #[derive(Clone)]

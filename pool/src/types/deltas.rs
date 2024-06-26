@@ -25,8 +25,8 @@ impl<'a, P: V3Pool> Deltas<'a, P> {
     pub fn new(pool: &'a P) -> Self {
         Self {
             pool,
-            token0_amount: TokenAmount::zero(pool, crate::Token::Zero),
-            token1_amount: TokenAmount::zero(pool, crate::Token::One),
+            token0_amount: TokenAmount::zero(pool, super::Token::Zero),
+            token1_amount: TokenAmount::zero(pool, super::Token::One),
         }
     }
 
@@ -59,7 +59,7 @@ impl<'a, P: V3Pool> Deltas<'a, P> {
                 unsafe {
                     Some(TokenAmount::from_scaled(
                         self.pool,
-                        crate::Token::One,
+                        super::Token::One,
                         self.token1_amount.clone() / decay,
                     ))
                 }
@@ -73,7 +73,7 @@ impl<'a, P: V3Pool> Deltas<'a, P> {
                 unsafe {
                     Some(TokenAmount::from_scaled(
                         self.pool,
-                        crate::Token::Zero,
+                        super::Token::Zero,
                         self.token0_amount.clone() / decay,
                     ))
                 }
