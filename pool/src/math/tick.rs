@@ -10,6 +10,10 @@ lazy_static::lazy_static! {
 }
 
 /// the tick corresponding to this price
+/// 
+/// # Caution
+/// this tick is not guaranteed to be initializable
+/// use [price_to_initializable_tick] if you need an initializable tick
 pub fn price_to_tick(price: Price) -> Tick {
     // saftey: Price is assumed to be in range to produce a valid tick
     unsafe {

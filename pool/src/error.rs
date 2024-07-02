@@ -14,13 +14,15 @@ pub enum V3PoolError<E: Error> {
     BadTickRange(Tick, Tick, TickSpacing)
 }
 
+impl<E: Error> Error for V3PoolError<E> {}
+
 impl<E: Error> V3PoolError<E> {
     pub fn backend_error(e: E) -> Self {
         V3PoolError::BackendError(e)
     }
 }
 
-impl std::fmt::Display for V3PoolError<ParseFloatError> {
+impl<E: Error> std::fmt::Display for V3PoolError<E> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             V3PoolError::ParseError(e) => write!(f, "V3PoolError::ParseError: {}", e),
