@@ -1,5 +1,5 @@
 use super::pool::Pool;
-use crate::pool::{FeeTier, V3PoolError};
+use crate::{error::V3PoolError, FeeTier};
 use bindings::{V3FactoryContract, V3PoolContract};
 use ethers::{contract::ContractError, providers::Middleware, types::Address};
 use std::sync::Arc;
@@ -24,11 +24,11 @@ impl<M: Middleware + 'static> Factory<M> {
         second_token: Address,
         fee: FeeTier,
     ) -> Result<Address, V3PoolError<ContractError<M>>> {
-        Ok(self
-            .factory
+        self.factory
             .get_pool(first_token, second_token, fee.as_scaled_bp())
             .call()
-            .await?)
+            .await
+            .map_err(V3PoolError::backend_error)
     }
 
     /// todo! maybe we spawn a thread here and send the Pool over a channel or use an arc to share
@@ -49,6 +49,8 @@ impl<M: Middleware + 'static> Factory<M> {
 
         let bindings = V3PoolContract::new(address, self.middleware.clone());
 
-        Ok(Pool::new(bindings, self.middleware.clone(), fee).await?)
+        Pool::new(bindings, self.middleware.clone(), fee)
+            .await
+            .map_err(V3PoolError::backend_error)
     }
 }

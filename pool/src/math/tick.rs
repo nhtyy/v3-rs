@@ -45,5 +45,6 @@ pub fn price_to_initializable_tick(price: Price, tick_spacing: TickSpacing) -> T
 
 /// 1.0001^tick
 pub fn tick_to_price(tick: Tick) -> Price {
-    TICK_BASE.clone().pow(*tick).into()
+    // saftey: tick is assumed to be in range to produce a valid price
+    unsafe { Price::new_unchecked(TICK_BASE.clone().pow(*tick).floor()) }
 }

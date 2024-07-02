@@ -1,7 +1,9 @@
 use std::error::Error;
 use rug::float::ParseFloatError;
+use crate::math::Tick;
 
 use crate::math::BoundsError;
+use crate::TickSpacing;
 
 #[derive(Debug, Clone)]
 pub enum V3PoolError<E: Error> {
@@ -9,6 +11,7 @@ pub enum V3PoolError<E: Error> {
     BackendError(E),
     BoundsError(BoundsError),
     PoolNotFound,
+    BadTickRange(Tick, Tick, TickSpacing)
 }
 
 impl<E: Error> V3PoolError<E> {
@@ -24,6 +27,7 @@ impl std::fmt::Display for V3PoolError<ParseFloatError> {
             V3PoolError::BackendError(e) => write!(f, "V3PoolError::BackendError: {}", e),
             V3PoolError::BoundsError(e) => write!(f, "V3PoolError::BoundsError: {}", e),
             V3PoolError::PoolNotFound => write!(f, "V3PoolError: No Pool found"),
+            V3PoolError::BadTickRange(a, b, c) => write!(f, "V3PoolError: Bad tick range: {:?} {:?} {:?}", a, b, c)
         }
     }
 }

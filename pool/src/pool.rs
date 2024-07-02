@@ -3,14 +3,20 @@ pub mod price;
 pub mod swap;
 
 use crate::error::V3PoolError;
-use crate::math::{SqrtPrice, Tick};
+use crate::math::{Price, SqrtPrice, Tick};
 
-use crate::{FeeTier, TickSpacing};
+use crate::types::price::PoolPrice;
+use crate::{FeeTier, TickSpacing, Token};
 use ethers::types::Address;
 use futures::Stream;
+use lazy_static::lazy_static;
 use rug::Float;
 
 pub type PoolResult<T, E> = std::result::Result<T, V3PoolError<E>>;
+
+lazy_static! {
+    pub static ref X96: Float = Float::with_val(100, 2u128.pow(96));
+}
 
 /// [V3Pool] is the main trait that all v3 pools should implement
 /// it provides a set of functions that can be used to calculate the price of the pool
@@ -20,29 +26,8 @@ pub type PoolResult<T, E> = std::result::Result<T, V3PoolError<E>>;
 #[async_trait::async_trait]
 pub trait V3Pool: Send + Sync + Sized + 'static {
     type BackendError: std::error::Error + Send + Sync + 'static;
-
     /// An ordred stream of ticks
-    type Ticks: Stream<Item = Result<Float, Self::BackendError>> + Send + Sync + 'static;
-
-    fn fee(&self) -> &FeeTier;
-    fn token0(&self) -> &Address;
-    fn token1(&self) -> &Address;
-    fn token0_decimals(&self) -> &u8;
-    fn token1_decimals(&self) -> &u8;
-
-    fn x96() -> Float {
-        Float::with_val(100, 2u128.pow(96))
-    }
-
-    fn tick_spacing(&self) -> TickSpacing {
-        self.fee().as_spacing()
-    }
-
-    /// The sqrt price of the pool
-    async fn sqrt_price(&self) -> Result<SqrtPrice, V3PoolError<Self::BackendError>> {
-        // saftey: sqrt price comes from pool
-        Ok(unsafe { SqrtPrice::new_unchecked(self.sqrt_price_x96().await? / Self::x96()) })
-    }
+    type Ticks: Stream<Item = Result<Float, V3PoolError<Self::BackendError>>> + Send + Unpin;
 
     // The current in range liquidity of the pool
     async fn current_liquidity(&self) -> PoolResult<Float, Self::BackendError>;
@@ -52,14 +37,40 @@ pub trait V3Pool: Send + Sync + Sized + 'static {
 
     /// Returns the liqudity delta to be added if youre were crossing
     /// into this tick as price is increasing
-    async fn tick(&self, tick: Tick) -> Result<Float, V3PoolError<Self::BackendError>>;
+    async fn tick(&self, tick: Tick) -> PoolResult<Float, Self::BackendError>;
 
-    /// Since tick delta should be added as price increase, a tick range can account for the opposite case
-    /// if ending < starting, you can flip the signs of the deltas
-    ///
-    /// SO: implementors should ensure that the returned amount is correct for the direction
-    ///
     /// returns the deltas (accounting for direction) between [starting, ending]
     /// if starting == ending, returns []
-    fn tick_range(&self, starting: Tick, ending: Tick) -> Self::Ticks;
+    /// ### Notice:
+    /// implementors should ensure that the returned amount is correct for the direction
+    /// Since tick delta should be added as price increase, a tick range can account for the opposite case
+    /// if ending < starting, you can flip the signs of the deltas
+    fn tick_range(&self, starting: Tick, ending: Tick) -> PoolResult<Self::Ticks, Self::BackendError>;
+
+    /// The fee tier of the pool
+    fn fee(&self) -> &FeeTier;
+    fn token0(&self) -> &Address;
+    fn token0_decimals(&self) -> &u8;
+    fn token1(&self) -> &Address;
+    fn token1_decimals(&self) -> &u8;
+    fn address(&self) -> Address;
+
+    fn tick_spacing(&self) -> TickSpacing {
+        self.fee().as_spacing()
+    }
+
+    async fn price(&self) -> PoolResult<Price, Self::BackendError> {
+        Ok(self.sqrt_price().await?.into())
+    }
+
+    /// The sqrt price of the pool
+    async fn sqrt_price(&self) -> PoolResult<SqrtPrice, Self::BackendError> {
+        // saftey: sqrt price comes from pool
+        Ok(unsafe { SqrtPrice::new_unchecked(self.sqrt_price_x96().await? / X96.clone()) })
+    }
+
+    /// Returns the current pool price in terms of the numeraire
+    async fn pool_price(&self, numeraire: Token) -> PoolResult<PoolPrice<'_, Self>, Self::BackendError> {
+        Ok(PoolPrice::from_price(self, self.price().await?, numeraire))
+    }
 }

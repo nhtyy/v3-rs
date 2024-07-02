@@ -2,11 +2,10 @@ use futures::TryStreamExt;
 use rug::Float;
 
 use crate::error::V3PoolError;
-use crate::math::{SqrtPrice, Tick};
+use crate::math::{Price, SqrtPrice, Tick};
 use crate::V3Pool;
 use crate::math::tick::{price_to_initializable_tick, tick_to_price};
 use crate::types::deltas::Deltas;
-use crate::types::price::PoolPrice;
 
 #[async_trait::async_trait]
 pub trait PriceExt: V3Pool {
@@ -14,27 +13,27 @@ pub trait PriceExt: V3Pool {
     /// price_of_0_in_1 should not include the underlying nominal units
     async fn amounts_to_move_price(
         &self,
-        new_price: PoolPrice<'async_trait, Self>,
+        new_price: Price,
     ) -> Result<Deltas<Self>, V3PoolError<Self::BackendError>> {
         let mut current_liquidity = self.current_liquidity().await?;
 
         tracing::debug!("current L: {:?}", current_liquidity);
 
         let mut current_sqrt_price = self.sqrt_price().await?;
-        let target_sqrt_price: SqrtPrice = new_price.into_price().into();
+        let target_sqrt_price: SqrtPrice = new_price.into();
 
         tracing::debug!("current sqrt price: {:?}", current_sqrt_price);
         tracing::debug!("target sqrt price: {:?}", target_sqrt_price);
 
         // at this point we dont know if were going up or down
         // but either way these are always the "lower" prices but 
-        let current_lower_tick =
+        let starting_lower_tick =
             price_to_initializable_tick(current_sqrt_price.clone().into(), self.tick_spacing());
 
         let target_lower_tick: Tick =
             price_to_initializable_tick(target_sqrt_price.clone().into(), self.tick_spacing());
 
-        tracing::trace!("current_lower_tick {:?}", current_lower_tick);
+        tracing::trace!("starting_lower_tick {:?}", starting_lower_tick);
         tracing::trace!("target_lower_tick {:?}", target_lower_tick);
 
         let mut deltas = Deltas::new(self);
@@ -44,10 +43,10 @@ pub trait PriceExt: V3Pool {
         // if were in the same tick we want to just move to the price and exit from there
         // if were going up lets move to the boundry, include that boundry and then move into the loop
         // if were going down lets move to the boundry, include that boundry and then move into the loop
-        let ticks: Vec<Float> = if current_lower_tick < target_lower_tick {
+        let ticks: Vec<Float> = if starting_lower_tick < target_lower_tick {
             tracing::debug!("current lower tick is less than target lower tick");
             tracing::debug!("were momving the price up");
-            next_tick = current_lower_tick.up(self.tick_spacing());
+            next_tick = starting_lower_tick.up(self.tick_spacing());
             up = true;
 
             // move the price to the next tick
@@ -58,14 +57,13 @@ pub trait PriceExt: V3Pool {
             );
 
             // get the tick range from the current tick to the target tick
-            self.tick_range(current_lower_tick, target_lower_tick)
+            self.tick_range(next_tick, target_lower_tick)?
                 .try_collect()
-                .await
-                .map_err(V3PoolError::backend_error)?
-        } else if current_lower_tick > target_lower_tick {
+                .await?
+        } else if starting_lower_tick > target_lower_tick {
             tracing::debug!("current lower tick is greater than target lower tick");
             tracing::debug!("were moving the price down");
-            next_tick = current_lower_tick;
+            next_tick = starting_lower_tick;
             up = false;
 
             // move the price to the next tick
@@ -77,10 +75,9 @@ pub trait PriceExt: V3Pool {
 
             // get the tick range from the current tick to the target tick
             self
-                .tick_range(current_lower_tick, target_lower_tick.up(self.tick_spacing()))
+                .tick_range(starting_lower_tick, target_lower_tick.up(self.tick_spacing()))?
                 .try_collect()
-                .await
-                .map_err(V3PoolError::backend_error)?
+                .await?
         } else {
             tracing::debug!("current lower tick is equal to target lower tick");
 
@@ -92,8 +89,6 @@ pub trait PriceExt: V3Pool {
 
             return Ok(deltas);
         };
-
-        tracing::trace!(target = "n", "{:?}", ticks);
 
         let mut ticks = ticks.into_iter();
         while let Some(delta) = ticks.next() {
@@ -112,7 +107,9 @@ pub trait PriceExt: V3Pool {
                         target_sqrt_price.clone(),
                     );
 
-                    return Ok(deltas);
+                    tracing::trace!(?up, "exiting tick loop");
+
+                    break;
                 }
             } else {
                 next_tick = current_tick.down(self.tick_spacing());
@@ -126,7 +123,9 @@ pub trait PriceExt: V3Pool {
                         target_sqrt_price.clone(),
                     );
 
-                    return Ok(deltas);
+                    tracing::trace!(?up, "exiting tick loop");
+
+                    break;
                 }
             }
 
@@ -137,14 +136,10 @@ pub trait PriceExt: V3Pool {
             );
         }
 
-        unreachable!("Bad Tick range for price move loop")
+        Ok(deltas)
     }
 
     async fn price_after() {
-        todo!()
-    }
-
-    async fn pool_price() {
         todo!()
     }
 }

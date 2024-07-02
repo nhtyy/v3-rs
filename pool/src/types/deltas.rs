@@ -31,51 +31,51 @@ impl<'a, P: V3Pool> Deltas<'a, P> {
     }
 
     pub fn update(&mut self, liquidity: Float, sqrt_price: SqrtPrice, target_price: SqrtPrice) {
-        *self.token0_amount +=
+        self.token0_amount +=
             token0_delta(sqrt_price.clone(), target_price.clone(), liquidity.clone());
 
-        *self.token1_amount += token1_delta(sqrt_price, target_price, liquidity);
+        self.token1_amount += token1_delta(sqrt_price, target_price, liquidity);
     }
 
-    /// Returns the additional amount of tokens needs to recieve the target amount
+    /// Returns the additional amount of tokens you would need to add to your swap to cover the fee
     ///
     /// Returns None if any amount is zero
-    pub fn fee_amount(&self, fee_bp: u32) -> Option<TokenAmount<P>> {
-        if self.token0_amount.is_zero() || self.token1_amount.is_zero() {
-            return None;
+    pub fn fee_amount(&self) -> TokenAmount<P> {
+        let token1_amount = self.token1_amount.as_float();
+        let token0_amount = self.token0_amount.as_float();
+
+        if token0_amount.is_zero() || token1_amount.is_zero() {
+            tracing::warn!("got a zero token trade");
+            return TokenAmount::zero(self.pool, super::Token::Zero);
         }
+
+        let fee = Float::with_val(100, self.pool.fee().as_bp());
+        let fee = fee / 10000;
+        let decay = 1 - fee;
 
         // The positive amount is the amount coming into the pool
         match (
-            self.token0_amount.is_sign_negative(),
-            self.token1_amount.is_sign_negative(),
+            token0_amount.is_sign_negative(),
+            token1_amount.is_sign_negative(),
         ) {
             (true, false) => {
-                let fee = Float::with_val(100, fee_bp);
-                let fee = fee / 10000;
-                let decay = 1 - fee;
-
                 // Saftey: amounts came from valid token amounts
                 unsafe {
-                    Some(TokenAmount::from_scaled(
+                    TokenAmount::from_scaled(
                         self.pool,
                         super::Token::One,
-                        self.token1_amount.clone() / decay,
-                    ))
+                        token1_amount.clone() / decay,
+                    )
                 }
             }
             (false, true) => {
-                let fee = Float::with_val(100, fee_bp);
-                let fee = fee / 10000;
-                let decay = 1 - fee;
-
                 // Saftey: amounts came from valid token amounts
                 unsafe {
-                    Some(TokenAmount::from_scaled(
+                    TokenAmount::from_scaled(
                         self.pool,
                         super::Token::Zero,
-                        self.token0_amount.clone() / decay,
-                    ))
+                        token0_amount.clone() / decay,
+                    )
                 }
             }
             (_, _) => unreachable!("Got two non zero same sign deltas, this is a bug"),

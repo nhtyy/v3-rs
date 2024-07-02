@@ -1,3 +1,9 @@
+
+#[macro_use]
+mod macros;
+
+mod traits;
+
 /// Addresses from Uniswap and things like that
 pub mod constants;
 
@@ -8,12 +14,12 @@ pub mod pool;
 pub use pool::*;
 
 pub mod position;
-pub use position::PositionsReturn as Position;
-pub use position::PositionManager;
+// pub use position::PositionsReturn as Position;
+// pub use position::PositionManager;
 
 pub mod math;
 
 pub mod error;
 
 pub mod types;
-pub use types::{FeeTier, TickSpacing, Token};
+pub use types::{FeeTier, TickSpacing, Token, price::PoolPrice, amount::TokenAmount};

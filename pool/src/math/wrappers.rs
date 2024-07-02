@@ -1,7 +1,9 @@
+use ethers::types::U256;
 use lazy_static::lazy_static;
 use rug::Float;
 use rug::ops::Pow;
 
+use crate::traits::IntoU256;
 use crate::TickSpacing;
 
 lazy_static! {
@@ -25,165 +27,16 @@ impl std::fmt::Display for BoundsError {
 
 impl std::error::Error for BoundsError {}
 
-/// Implements conversions and operations on the type
-/// 
-/// The type must impl `Add`, `Sub`, `Mul`, `Div`
-macro_rules! impl_wrappers {
-    (
-        $(
-            $(#[$attrs:meta])*
-            pub struct $name:ident($vis:vis $inner:ty);
-        )*
-    ) => {
-        $(
-            $(#[$attrs])*
-            pub struct $name($vis $inner);
-
-            impl $name {
-                #[inline]
-                /// Get the wrapped value by consuming the wrapper
-                pub fn into_inner(self) -> $inner {
-                    self.0
-                }
-            }
-
-            impl From<$name> for $inner {
-                fn from(inner: $name) -> Self {
-                    inner.0
-                }
-            }
-
-            impl ::std::ops::Deref for $name {
-                type Target = $inner;
-
-                fn deref(&self) -> &Self::Target {
-                    &self.0
-                }
-            }
-
-            impl ::std::ops::DerefMut for $name {
-                fn deref_mut(&mut self) -> &mut Self::Target {
-                    &mut self.0
-                }
-            }
-
-            impl ::std::ops::Add for $name {
-                type Output = $inner;
-
-                fn add(self, rhs: Self) -> Self::Output {
-                    self.0 + rhs.0
-                }
-            }
-
-            impl ::std::ops::Add<$inner> for $name {
-                type Output = $inner;
-
-                fn add(self, rhs: $inner) -> Self::Output {
-                    self.0 + rhs
-                }
-            }
-
-            impl ::std::ops::Add<$name> for $inner {
-                type Output = $inner;
-
-                fn add(self, rhs: $name) -> Self::Output {
-                    self + rhs.0
-                }
-            }
-
-            impl ::std::ops::Sub for $name {
-                type Output = $inner;
-
-                fn sub(self, rhs: Self) -> Self::Output {
-                    self.0 - rhs.0
-                }
-            }
-
-            impl ::std::ops::Sub<$inner> for $name {
-                type Output = $inner;
-
-                fn sub(self, rhs: $inner) -> Self::Output {
-                    self.0 - rhs
-                }
-            }
-
-            impl ::std::ops::Sub<$name> for $inner {
-                type Output = $inner;
-
-                fn sub(self, rhs: $name) -> Self::Output {
-                    self - rhs.0
-                }
-            }
-
-            impl ::std::ops::Mul for $name {
-                type Output = $inner;
-
-                fn mul(self, rhs: Self) -> Self::Output {
-                    self.0 * rhs.0
-                }
-            }
-
-            impl ::std::ops::Mul<$inner> for $name {
-                type Output = $inner;
-
-                fn mul(self, rhs: $inner) -> Self::Output {
-                   self.0 * rhs
-                }
-            }
-
-            impl ::std::ops::Mul<$name> for $inner {
-                type Output = $inner;
-
-                fn mul(self, rhs: $name) -> Self::Output {
-                    self * rhs.0
-                }
-            }
-
-            impl ::std::ops::Div for $name {
-                type Output = $inner;
-
-                fn div(self, rhs: Self) -> Self::Output {
-                    self.0 / rhs.0
-                }
-            }
-
-            impl ::std::ops::Div<$inner> for $name {
-                type Output = $inner;
-
-                fn div(self, rhs: $inner) -> Self::Output {
-                   self.0 / rhs
-                }
-            }
-
-            impl ::std::ops::Div<$name> for $inner {
-                type Output = $inner;
-
-                fn div(self, rhs: $name) -> Self::Output {
-                    self / rhs.0
-                }
-            }
-        )*
-    };
-}
-
 impl_wrappers! {
     /// A *valid* tick in the range [-887272, 887272]
     #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Ord, Eq)]
     pub struct Tick(i32);
 
-    /// A raw validatated pool price
-    /// 
-    /// This type is meant to be used for raw pool prices
-    /// in most cases the account has additional scalars
-    /// that can affect the value of this number
+    /// A raw in-range pool price
     #[derive(Clone, Debug, PartialEq, PartialOrd)]
     pub struct Price(Float);
 
-    /// A raw pool sqrt price
-    /// 
-    /// This type is meant to be used for raw pool sqrt prices
-    /// in most cases the account has additional scalars
-    /// that can affect the value of this number
+    /// A raw in range sqrt pool sqrt price
     #[derive(Clone, Debug, PartialEq, PartialOrd)]
     pub struct SqrtPrice(Float);
 }
@@ -191,7 +44,7 @@ impl_wrappers! {
 impl Tick {
     /// Creates a new *valid* tick from an i32
     /// 
-    /// # Returns None:
+    /// # Errors:
     /// - if the tick is less than -887272
     /// - if the tick is greater than 887272
     pub fn new(tick: i32) -> Result<Self, BoundsError> {
@@ -210,7 +63,7 @@ impl Tick {
 
     /// Returns the next tick
     /// 
-    /// Warning: this function will not return a tick greater than 887272
+    /// ### Warning: this function will not return a tick greater than 887272
     pub fn up(self, spacing: TickSpacing) -> Self {
         let next = self.0 + spacing as i32;
 
@@ -223,7 +76,7 @@ impl Tick {
 
     /// Returns the previous tick
     /// 
-    /// Warning: this function will not return a tick less than -887272
+    /// ### Warning: this function will not return a tick less than -887272
     pub fn down(self, spacing: TickSpacing) -> Self {
         let prev = self.0 - spacing as i32;
 
@@ -236,13 +89,21 @@ impl Tick {
 }
 
 impl Price {
-    /// Creates a new price from a float
+    /// Creates a new sqrt price from a float
+    /// 
+    /// # Errors:
+    /// - if the price is less than the minimum price
+    /// - if the price is greater than the maximum price
     pub fn new(float: Float) -> Result<Self, BoundsError> {
         if float >= *MIN_PRICE && float <= *MAX_PRICE {
             Ok(Self(float))
         } else {
             Err(BoundsError("Price", float.to_string()))
         }
+    }
+
+    pub fn invert(self) -> Self {
+        Self(self.0.recip())
     }
 
     /// Creates a new price from a float without checking if it is valid
@@ -254,6 +115,10 @@ impl Price {
 
 impl SqrtPrice {
     /// Creates a new sqrt price from a float
+    /// 
+    /// # Errors:
+    /// - if the sqrt price is less than the minimum sqrt price
+    /// - if the sqrt price is greater than the maximum sqrt price
     pub fn new(float: Float) -> Result<Self, BoundsError> {
         if float >= *MIN_SQRT_PRICE && float <= *MAX_SQRT_PRICE {
             Ok(Self(float))
@@ -269,15 +134,33 @@ impl SqrtPrice {
     }
 }
 
-impl From<Float> for Price {
-    fn from(float: Float) -> Self {
-        Self(float)
+impl PartialOrd<Float> for Price {
+    fn partial_cmp(&self, other: &Float) -> Option<std::cmp::Ordering> {
+        self.0.partial_cmp(other)
     }
 }
 
-impl From<Float> for SqrtPrice {
-    fn from(float: Float) -> Self {
-        Self(float)
+impl PartialOrd<Float> for SqrtPrice {
+    fn partial_cmp(&self, other: &Float) -> Option<std::cmp::Ordering> {
+        self.0.partial_cmp(other)
+    }
+}
+
+impl PartialEq<Float> for Price {
+    fn eq(&self, other: &Float) -> bool {
+        self.0.eq(other)
+    }
+}
+
+impl PartialEq<Float> for SqrtPrice {
+    fn eq(&self, other: &Float) -> bool {
+        self.0.eq(other)
+    }
+}
+
+impl From<Price> for U256 {
+    fn from(price: Price) -> Self {
+        price.0.into_u256().expect("Failed to convert price to U256")
     }
 }
 
