@@ -69,3 +69,70 @@ impl TickSpacing {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{error::V3PoolError, math::Tick, FeeTier, PoolResult};
+    use ethers::types::Address;
+    use std::convert::Infallible;
+    use rug::Float;
+
+    pub(crate) struct MockPool {
+        pub token0: Address,
+        pub token1: Address,
+        pub token0_decimals: u8,
+        pub token1_decimals: u8,
+        pub fee: FeeTier,
+    }
+
+    #[async_trait::async_trait]
+    impl crate::V3Pool for MockPool {
+        type BackendError = Infallible;
+        type Ticks = futures::stream::Empty<Result<Float, V3PoolError<Self::BackendError>>>;
+
+        fn token0(&self) -> &Address {
+            &self.token0
+        }
+
+        fn token0_decimals(&self) -> &u8 {
+            &self.token0_decimals
+        }
+
+        fn token1(&self) -> &Address {
+            &self.token1
+        }
+
+        fn token1_decimals(&self) -> &u8 {
+            &self.token1_decimals
+        }
+
+        fn fee(&self) -> &FeeTier {
+            &self.fee
+        }
+
+        fn address(&self) -> Address {
+            Address::zero()
+        }
+
+        async fn current_liquidity(&self) -> PoolResult<Float, Self::BackendError> {
+            Ok(Float::with_val(100, 100))
+        }
+
+        async fn sqrt_price_x96(&self) -> PoolResult<Float, Self::BackendError> {
+            Ok(Float::with_val(100, 100))
+        }
+
+        async fn tick(&self, _tick: Tick) -> PoolResult<Float, Self::BackendError> {
+            Ok(Float::with_val(100, 100))
+        }
+
+        fn tick_range(
+            &self,
+            _starting: Tick,
+            _ending: Tick,
+        ) -> PoolResult<Self::Ticks, Self::BackendError> {
+            Ok(futures::stream::empty())
+        }
+    }
+
+}

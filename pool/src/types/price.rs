@@ -30,9 +30,21 @@ pub struct PoolPrice<'a, P> {
     pool: &'a P,
 }
 
+impl<'a, P> Clone for PoolPrice<'a, P> {
+    fn clone(&self) -> Self {
+        Self {
+            price: self.price.clone(),
+            pool: self.pool,
+            numeraire: self.numeraire,
+        }
+    }
+}
+
 impl<'a, P: V3Pool> PoolPrice<'a, P> {
     /// Create a new pool price from this Price wrapper.
     ///
+    /// # Arguments
+    /// The price of token0 in terms of token1, and the denomination to format the price in
     pub(crate) fn from_price(pool: &'a P, price: Price, numeraire: Token) -> Self {
         Self {
             price,
@@ -127,7 +139,9 @@ impl<'a, P: V3Pool> PartialEq for PoolPrice<'a, P> {
         #[cfg(debug_assertions)]
         {
             if self.pool.address() != other.pool.address() {
-                tracing::warn!("comparing pool prices for different pools")
+                tracing::warn!("comparing pool prices for different pools");
+                tracing::warn!("pool1: {:?}", self.pool.address());
+                tracing::warn!("pool2: {:?}", other.pool.address());
             }
         }
 
@@ -140,7 +154,9 @@ impl<'a, P: V3Pool> PartialOrd for PoolPrice<'a, P> {
         #[cfg(debug_assertions)]
         {
             if self.pool.address() != other.pool.address() {
-                tracing::warn!("comparing pool prices for different pools")
+                tracing::warn!("comparing pool prices for different pools");
+                tracing::warn!("pool1: {:?}", self.pool.address());
+                tracing::warn!("pool2: {:?}", other.pool.address());
             }
         }
 
@@ -163,5 +179,44 @@ impl<'a, P: V3Pool> std::fmt::Debug for PoolPrice<'a, P> {
             .field("token0_decimals", &self.pool.token0_decimals())
             .field("token1_decimals", &self.pool.token1_decimals())
             .finish()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::types::tests::MockPool;
+    use rug::ops::Pow;
+
+    #[test]
+    fn test_price_scaled_as_expected() {
+        let pool = MockPool {
+            token0: Default::default(),
+            token1: Default::default(),
+            token0_decimals: 5,
+            token1_decimals: 10,
+            fee: crate::FeeTier::Mid,
+        };
+
+        let price = rug::Float::with_val(100, 100);
+        let pool_price = crate::types::price::PoolPrice::from_normalized(&pool, price.clone(), crate::types::Token::One).unwrap();
+
+        println!("{:?}", rug::Float::from(pool_price.clone()).to_string());
+        assert_eq!(rug::Float::from(pool_price), price * rug::Float::with_val(100, 10).pow(5));
+    }
+    
+    #[test]
+    fn test_price_round_trip() {
+        let pool = MockPool {
+            token0: Default::default(),
+            token1: Default::default(),
+            token0_decimals: 5,
+            token1_decimals: 10,
+            fee: crate::FeeTier::Mid,
+        };
+
+        let price = rug::Float::with_val(100, 100);
+        let pool_price = crate::types::price::PoolPrice::from_normalized(&pool, price.clone(), crate::types::Token::One).unwrap();
+
+        assert_eq!(pool_price.normalized(), price);
     }
 }

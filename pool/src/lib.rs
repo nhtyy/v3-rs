@@ -1,4 +1,3 @@
-
 #[macro_use]
 mod macros;
 
@@ -11,11 +10,11 @@ pub mod constants;
 pub mod ethers_pool;
 
 pub mod pool;
-pub use pool::*;
+pub use pool::{V3Pool, PoolResult};
 
 pub mod position;
-// pub use position::PositionsReturn as Position;
-// pub use position::PositionManager;
+pub use position::PositionsReturn as Position;
+pub use position::PositionManager;
 
 pub mod math;
 
