@@ -30,3 +30,27 @@ impl<T> ApplyBps for T where
         self.clone() * (10_000 + bps) / 10_000
     }
 }
+
+#[cfg(test)]
+mod test {
+    use rug::Float;
+    use super::ApplyBps;
+
+    #[test]
+    fn test_apply_bps_up_float() {
+        let value = Float::with_val(100, 100);
+        // 100 bps = 1%
+        let result = value.apply_bps_up(100);
+
+        assert_eq!(result, Float::with_val(100, 101));
+    }
+
+    #[test]
+    fn test_apply_bps_down_float() {
+        let value = Float::with_val(100, 100);
+        // 100 bps = 1%
+        let result = value.apply_bps_down(100);
+
+        assert_eq!(result, Float::with_val(100, 99));
+    }
+}

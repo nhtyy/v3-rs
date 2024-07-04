@@ -9,10 +9,10 @@ use bindings::{ERC20Contract, V3PoolContract};
 use ethers::contract::ContractError;
 use ethers::{
     providers::Middleware,
-    types::{Address, U256},
+    types::Address,
 };
-use futures::stream::{Collect, FuturesOrdered, FuturesUnordered, Map, StreamExt};
-use futures::{Future, Stream};
+use futures::stream::{FuturesUnordered, StreamExt};
+use futures::Stream;
 use rug::Float;
 
 pub struct Pool<M: Middleware> {
@@ -53,10 +53,6 @@ impl<M: Middleware + 'static> Pool<M> {
             token1_decimals,
             fee,
         })
-    }
-
-    async fn slot0(&self) -> Result<(U256, i32, u16, u16, u16, u8, bool), ContractError<M>> {
-        Ok(self.pool.slot_0().await?)
     }
 }
 

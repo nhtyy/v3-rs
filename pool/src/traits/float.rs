@@ -29,8 +29,6 @@ pub enum ConversionError {
     NaN,
     #[error("Value is infinite")]
     IsInfinte,
-    #[error("Got unexpected error when converting value \n{}", .0)]
-    Other(String),
 }
 
 pub trait IntoU256 {

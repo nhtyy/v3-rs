@@ -75,7 +75,8 @@ impl<'a, P: V3Pool> PoolPrice<'a, P> {
     /// 
     /// # Returns:
     /// the lower and upper bounds respectively
-    fn try_create_spread(&self, bps: u16) -> Result<(Self, Self), BoundsError> {
+    #[allow(unused)]
+    fn try_create_spread(&self, _bps: u16) -> Result<(Self, Self), BoundsError> {
         todo!()
     }
 }

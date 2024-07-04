@@ -1,7 +1,4 @@
-use crate::{
-    ethers_pool::pool::Pool,
-    math::{SqrtPrice, Tick},
-};
+use crate::math::{SqrtPrice, Tick};
 use ethers::{
     contract::abigen,
     providers::Middleware,
@@ -103,10 +100,7 @@ impl<M: Middleware + 'static> PositionManager<M> {
 }
 
 impl PositionsReturn {
-    pub fn token_balances(
-        &self,
-        sqrt_price: SqrtPrice,
-    ) -> anyhow::Result<Balances> {
+    pub fn token_balances(&self, sqrt_price: SqrtPrice) -> anyhow::Result<Balances> {
         let current_tick = price_to_tick(sqrt_price.clone().into());
 
         // saftey: comes from pool

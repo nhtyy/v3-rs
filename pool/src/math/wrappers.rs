@@ -160,7 +160,7 @@ impl PartialEq<Float> for SqrtPrice {
 
 impl From<Price> for U256 {
     fn from(price: Price) -> Self {
-        price.0.into_u256().expect("Failed to convert price to U256")
+        price.0.into_u256().expect("To convert a valid price wrapper to a u256")
     }
 }
 
@@ -185,5 +185,28 @@ impl std::fmt::Display for Price {
 impl std::fmt::Display for SqrtPrice {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_cant_make_oob_tick() {
+        let tick = Tick::new(887273);
+        assert!(tick.is_err());
+    }
+
+    #[test]
+    fn test_cant_make_oob_price() {
+        let price = Price::new(Float::with_val(100, 1.0001).pow(887273));
+        assert!(price.is_err());
+    }
+
+    #[test]
+    fn test_cant_make_oob_sqrt_price() {
+        let sqrt_price = SqrtPrice::new(Float::with_val(100, 1.0001).pow(887273));
+        assert!(sqrt_price.is_err());
     }
 }
