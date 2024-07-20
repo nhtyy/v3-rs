@@ -143,3 +143,5 @@ pub trait PriceExt: V3Pool {
         todo!()
     }
 }
+
+impl<P: V3Pool> PriceExt for P {}

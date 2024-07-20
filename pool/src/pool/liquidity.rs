@@ -7,7 +7,7 @@ use ethers::providers::Middleware;
 
 
 #[async_trait::async_trait]
-pub trait LiqudityExt: V3Pool {
+pub trait LiquidityExt: V3Pool {
     async fn lp_balance<M: Middleware + 'static>(
         &self,
         manager: &PositionManager<M>,
@@ -16,3 +16,5 @@ pub trait LiqudityExt: V3Pool {
         manager.total_positions_balance(self, who).await
     }
 }
+
+impl<P: V3Pool> LiquidityExt for P {}
