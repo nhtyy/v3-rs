@@ -10,7 +10,7 @@ pub mod constants;
 pub mod ethers_pool;
 
 pub mod pool;
-pub use pool::{V3Pool, PoolResult};
+pub use pool::{V3Pool, PoolResult, liquidity::LiqudityExt, swap::SwapExt, price::PriceExt};
 
 pub mod position;
 pub use position::PositionsReturn as Position;
