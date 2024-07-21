@@ -1,7 +1,7 @@
 #[macro_use]
 mod macros;
 
-mod traits;
+pub mod traits;
 
 /// Addresses from Uniswap and things like that
 pub mod constants;

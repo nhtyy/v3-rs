@@ -10,7 +10,6 @@ use crate::traits::ApplyBps;
 use crate::traits::{ConversionError, IntoFloat, IntoU256};
 use crate::V3Pool;
 
-#[derive(Clone)]
 /// A token amount that belongs to a pool
 ///
 /// There are helpers for converting between human readable amounts and scaled amounts
@@ -31,6 +30,16 @@ pub struct TokenAmount<'a, P> {
     pool: &'a P,
     token: Token,
     amount: Float,
+}
+
+impl<'a, P> Clone for TokenAmount<'a, P> {
+    fn clone(&self) -> Self {
+        Self {
+            pool: self.pool,
+            token: self.token,
+            amount: self.amount.clone(),
+        }
+    }
 }
 
 impl<'a, P: V3Pool> TokenAmount<'a, P> {

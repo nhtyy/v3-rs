@@ -234,6 +234,7 @@ mod test {
         assert_eq!(pool_price.normalized(), price);
     }
 
+    #[test]
     fn test_gt() {
         let pool = MockPool {
             token0: Default::default(),

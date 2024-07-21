@@ -6,7 +6,7 @@ lazy_static::lazy_static! {
     pub static ref U256_MAX: Float = Float::with_val(100, 2).pow(256);
 }
 
-pub(crate) trait IntoFloat {
+pub trait IntoFloat {
     fn into_float(&self) -> Float;
 }
 
