@@ -72,9 +72,9 @@ impl<'a, P: V3Pool> PoolPrice<'a, P> {
             }),
         }
     }
-    
+
     /// Remove scalar decimals from the price
-    /// 
+    ///
     /// In other words this is the human readable price
     pub fn normalized(&self) -> Float {
         match self.numeraire {
@@ -84,7 +84,7 @@ impl<'a, P: V3Pool> PoolPrice<'a, P> {
     }
 
     /// Trys to create a spread from the pool price erroring if the new prices are out of bounds
-    /// 
+    ///
     /// # Returns:
     /// the lower and upper bounds respectively
     #[allow(unused)]
@@ -178,6 +178,7 @@ impl<'a, P: V3Pool> std::fmt::Debug for PoolPrice<'a, P> {
             .field("token1", &self.pool.token1())
             .field("token0_decimals", &self.pool.token0_decimals())
             .field("token1_decimals", &self.pool.token1_decimals())
+            .field("numeraire", &self.numeraire)
             .finish()
     }
 }
@@ -198,12 +199,20 @@ mod test {
         };
 
         let price = rug::Float::with_val(100, 100);
-        let pool_price = crate::types::price::PoolPrice::from_normalized(&pool, price.clone(), crate::types::Token::One).unwrap();
+        let pool_price = crate::types::price::PoolPrice::from_normalized(
+            &pool,
+            price.clone(),
+            crate::types::Token::One,
+        )
+        .unwrap();
 
         println!("{:?}", rug::Float::from(pool_price.clone()).to_string());
-        assert_eq!(rug::Float::from(pool_price), price * rug::Float::with_val(100, 10).pow(5));
+        assert_eq!(
+            rug::Float::from(pool_price),
+            price * rug::Float::with_val(100, 10).pow(5)
+        );
     }
-    
+
     #[test]
     fn test_price_round_trip() {
         let pool = MockPool {
@@ -215,8 +224,43 @@ mod test {
         };
 
         let price = rug::Float::with_val(100, 100);
-        let pool_price = crate::types::price::PoolPrice::from_normalized(&pool, price.clone(), crate::types::Token::One).unwrap();
+        let pool_price = crate::types::price::PoolPrice::from_normalized(
+            &pool,
+            price.clone(),
+            crate::types::Token::One,
+        )
+        .unwrap();
 
         assert_eq!(pool_price.normalized(), price);
     }
+
+    fn test_gt() {
+        let pool = MockPool {
+            token0: Default::default(),
+            token1: Default::default(),
+            token0_decimals: 5,
+            token1_decimals: 10,
+            fee: crate::FeeTier::Mid,
+        };
+
+        let price = rug::Float::with_val(100, 100);
+        let pool_price = crate::types::price::PoolPrice::from_normalized(
+            &pool,
+            price.clone(),
+            crate::types::Token::One,
+        )
+        .unwrap();
+
+        let price2 = rug::Float::with_val(100, 200);
+        let pool_price2 = crate::types::price::PoolPrice::from_normalized(
+            &pool,
+            price2.clone(),
+            crate::types::Token::One,
+        )
+        .unwrap();
+
+        assert!(pool_price2 > pool_price);
+    }
+
+    
 }
