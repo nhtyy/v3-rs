@@ -55,6 +55,17 @@ pub trait V3Pool: Send + Sync + Sized + 'static {
     fn token1_decimals(&self) -> &u8;
     fn address(&self) -> Address;
 
+    /// Returns the position of the token in the pool
+    fn position_of(&self, token: &Address) -> Option<Token> {
+        if token == self.token0() {
+            Some(Token::Zero)
+        } else if token == self.token1() {
+            Some(Token::One)
+        } else {
+            None
+        }
+    }
+
     fn tick_spacing(&self) -> TickSpacing {
         self.fee().as_spacing()
     }
