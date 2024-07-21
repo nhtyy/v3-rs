@@ -7,8 +7,45 @@ use crate::math::Price;
 use crate::V3Pool;
 use ethers::types::U256;
 
+pub mod numeraire {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub struct Zero;
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub struct One;
+}
+pub use numeraire::*;
+
+impl sealed::Sealed for Zero {}
+impl sealed::Sealed for One {}
+
+impl Numeraire for Zero {
+    fn token() -> Token {
+        Token::Zero
+    }
+}
+
+impl Numeraire for One {
+    fn token() -> Token {
+        Token::One
+    }
+}
+
+/// A marker trait for the types [Zero] and [One],
+/// which indicate the token that a [PoolPrice] is denominated in
+pub trait Numeraire: sealed::Sealed {
+    fn token() -> Token;
+}
+
+mod sealed {
+    pub trait Sealed {}
+}
+
 /// Display and Debug implementations return the human readable price in the form the user selected at creation
 /// and there are helpers for converting between human readable prices and scaled prices
+///
+/// A pool price is generic over a type N: Numeraire which is a marker trait for the token that the price is denominated in
+/// A pool price implements from
 ///
 /// ## Comparions
 /// A pool price is directly comparable with other pool prices.
@@ -19,72 +56,66 @@ use ethers::types::U256;
 /// ## Conversions
 /// - all Into<T> implementations will return the scaled price accounting for the internal decimals of the pool
 ///     - if you want the human readable price use [PoolPrice::normalized]
-pub struct PoolPrice<'a, P> {
-    /// The token you want the price to be formatted as
-    numeraire: Token,
-
+pub struct PoolPrice<'a, P, N> {
     /// the price of token0 in terms of token1, accounting for the decimals of the pool
     price: Price,
-
     /// the pool that this price is for
     pool: &'a P,
+    /// the token that the price is denominated in
+    _numeraire: std::marker::PhantomData<N>,
 }
 
-impl<'a, P> Clone for PoolPrice<'a, P> {
+impl<'a, P, N> Clone for PoolPrice<'a, P, N> {
     fn clone(&self) -> Self {
         Self {
             price: self.price.clone(),
             pool: self.pool,
-            numeraire: self.numeraire,
+            _numeraire: self._numeraire,
         }
     }
 }
 
-impl<'a, P: V3Pool> PoolPrice<'a, P> {
+impl<'a, P: V3Pool, N: Numeraire> PoolPrice<'a, P, N> {
     /// Create a new pool price from this Price wrapper.
     ///
     /// # Arguments
     /// The price of token0 in terms of token1, and the denomination to format the price in
-    pub(crate) fn from_price(pool: &'a P, price: Price, numeraire: Token) -> Self {
+    pub fn from_price(pool: &'a P, price: Price) -> Self {
         Self {
             price,
             pool,
-            numeraire,
+            _numeraire: std::marker::PhantomData,
         }
     }
 
     /// Converts a (normalized) human readable price into a pool price
-    pub fn from_normalized(
-        pool: &'a P,
-        price: Float,
-        numeraire: Token,
-    ) -> Result<Self, BoundsError> {
-        match numeraire {
+    pub fn from_normalized(pool: &'a P, price: Float) -> Result<Self, BoundsError> {
+        match N::token() {
             Token::One => Ok(Self {
                 price: Price::new(scale_up(pool, price))?,
                 pool,
-                numeraire,
+                _numeraire: std::marker::PhantomData,
             }),
             Token::Zero => Ok(Self {
                 price: Price::new(scale_up(pool, price.recip()))?,
                 pool,
-                numeraire,
+                _numeraire: std::marker::PhantomData,
             }),
         }
     }
-    
+
     /// Remove scalar decimals from the price
-    /// 
+    ///
     /// In other words this is the human readable price
     pub fn normalized(&self) -> Float {
-        match self.numeraire {
+        match N::token() {
             Token::One => self.scale_down(),
             Token::Zero => self.scale_down().recip(),
         }
     }
 
     /// Trys to create a spread from the pool price erroring if the new prices are out of bounds
-    /// 
+    ///
     /// # Returns:
     /// the lower and upper bounds respectively
     #[allow(unused)]
@@ -93,7 +124,7 @@ impl<'a, P: V3Pool> PoolPrice<'a, P> {
     }
 }
 
-impl<'a, P: V3Pool> PoolPrice<'a, P> {
+impl<'a, P: V3Pool, N> PoolPrice<'a, P, N> {
     /// Probaly only useful for formatting
     ///
     /// Remove the internal decimals from the price
@@ -102,39 +133,41 @@ impl<'a, P: V3Pool> PoolPrice<'a, P> {
     }
 }
 
+impl<'a, P, N> From<PoolPrice<'a, P, N>> for Price {
+    fn from(price: PoolPrice<'a, P, N>) -> Self {
+        price.price
+    }
+}
+
+impl<'a, P, N> From<PoolPrice<'a, P, N>> for Float {
+    fn from(price: PoolPrice<'a, P, N>) -> Self {
+        price.price.into()
+    }
+}
+
+impl<'a, P, N> From<PoolPrice<'a, P, N>> for U256 {
+    fn from(price: PoolPrice<'a, P, N>) -> Self {
+        price.price.into()
+    }
+}
+
+/// Scales a value to account for the decimals of the pool assuming its in the correct numeraire for the pool ordering
 fn scale_up<P: V3Pool>(pool: &P, val: Float) -> Float {
     let exp = *pool.token1_decimals() as i16 - *pool.token0_decimals() as i16;
 
     val * Float::with_val(100, 10).pow(exp)
 }
 
+/// Scales a value to account for the decimals of the pool assuming its in the correct numeraire for the pool ordering
 fn scale_down<P: V3Pool>(pool: &P, val: Float) -> Float {
     let exp = *pool.token0_decimals() as i16 - *pool.token1_decimals() as i16;
 
     val * Float::with_val(100, 10).pow(exp)
 }
 
-impl<'a, P> From<PoolPrice<'a, P>> for Price {
-    fn from(price: PoolPrice<'a, P>) -> Self {
-        price.price
-    }
-}
-
-impl<'a, P> From<PoolPrice<'a, P>> for Float {
-    fn from(price: PoolPrice<'a, P>) -> Self {
-        price.price.into()
-    }
-}
-
-impl<'a, P> From<PoolPrice<'a, P>> for U256 {
-    fn from(price: PoolPrice<'a, P>) -> Self {
-        price.price.into()
-    }
-}
-
 //////////////////////// Comparsion ////////////////////////
 
-impl<'a, P: V3Pool> PartialEq for PoolPrice<'a, P> {
+impl<'a, P: V3Pool, N> PartialEq for PoolPrice<'a, P, N> {
     fn eq(&self, other: &Self) -> bool {
         #[cfg(debug_assertions)]
         {
@@ -149,7 +182,7 @@ impl<'a, P: V3Pool> PartialEq for PoolPrice<'a, P> {
     }
 }
 
-impl<'a, P: V3Pool> PartialOrd for PoolPrice<'a, P> {
+impl<'a, P: V3Pool, N> PartialOrd for PoolPrice<'a, P, N> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         #[cfg(debug_assertions)]
         {
@@ -164,13 +197,13 @@ impl<'a, P: V3Pool> PartialOrd for PoolPrice<'a, P> {
     }
 }
 
-impl<'a, P: V3Pool> std::fmt::Display for PoolPrice<'a, P> {
+impl<'a, P: V3Pool, N: Numeraire> std::fmt::Display for PoolPrice<'a, P, N> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.normalized())
     }
 }
 
-impl<'a, P: V3Pool> std::fmt::Debug for PoolPrice<'a, P> {
+impl<'a, P: V3Pool, N: Numeraire> std::fmt::Debug for PoolPrice<'a, P, N> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("PoolPrice")
             .field("price", &self.normalized())
@@ -184,6 +217,7 @@ impl<'a, P: V3Pool> std::fmt::Debug for PoolPrice<'a, P> {
 
 #[cfg(test)]
 mod test {
+    use super::One;
     use crate::types::tests::MockPool;
     use rug::ops::Pow;
 
@@ -198,12 +232,17 @@ mod test {
         };
 
         let price = rug::Float::with_val(100, 100);
-        let pool_price = crate::types::price::PoolPrice::from_normalized(&pool, price.clone(), crate::types::Token::One).unwrap();
+        let pool_price =
+            crate::types::price::PoolPrice::<_, One>::from_normalized(&pool, price.clone())
+                .unwrap();
 
         println!("{:?}", rug::Float::from(pool_price.clone()).to_string());
-        assert_eq!(rug::Float::from(pool_price), price * rug::Float::with_val(100, 10).pow(5));
+        assert_eq!(
+            rug::Float::from(pool_price),
+            price * rug::Float::with_val(100, 10).pow(5)
+        );
     }
-    
+
     #[test]
     fn test_price_round_trip() {
         let pool = MockPool {
@@ -215,7 +254,9 @@ mod test {
         };
 
         let price = rug::Float::with_val(100, 100);
-        let pool_price = crate::types::price::PoolPrice::from_normalized(&pool, price.clone(), crate::types::Token::One).unwrap();
+        let pool_price =
+            crate::types::price::PoolPrice::<_, One>::from_normalized(&pool, price.clone())
+                .unwrap();
 
         assert_eq!(pool_price.normalized(), price);
     }

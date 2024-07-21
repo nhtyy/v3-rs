@@ -5,7 +5,7 @@ pub mod swap;
 use crate::error::V3PoolError;
 use crate::math::{Price, SqrtPrice, Tick};
 
-use crate::types::price::PoolPrice;
+use crate::types::price::{Numeraire, PoolPrice};
 use crate::{FeeTier, TickSpacing, Token};
 use ethers::types::Address;
 use futures::Stream;
@@ -70,7 +70,7 @@ pub trait V3Pool: Send + Sync + Sized + 'static {
     }
 
     /// Returns the current pool price in terms of the numeraire
-    async fn pool_price(&self, numeraire: Token) -> PoolResult<PoolPrice<'_, Self>, Self::BackendError> {
-        Ok(PoolPrice::from_price(self, self.price().await?, numeraire))
+    async fn pool_price<N: Numeraire>(&self) -> PoolResult<PoolPrice<'_, Self, N>, Self::BackendError> {
+        Ok(PoolPrice::<_, N>::from_price(self, self.price().await?))
     }
 }
