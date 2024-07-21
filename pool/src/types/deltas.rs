@@ -1,3 +1,5 @@
+use std::fmt::Formatter;
+
 use rug::Float;
 
 use crate::math::swap::{token0_delta, token1_delta};
@@ -11,6 +13,15 @@ pub struct Deltas<'a, P: V3Pool> {
     pool: &'a P,
     token0_amount: TokenAmount<'a, P>,
     token1_amount: TokenAmount<'a, P>,
+}
+
+impl<'a, P: V3Pool> std::fmt::Debug for Deltas<'a, P> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Deltas")
+            .field("token0_amount", &self.token0_amount)
+            .field("token1_amount", &self.token1_amount)
+            .finish()
+    }
 }
 
 impl<'a, P: V3Pool> Deltas<'a, P> {
