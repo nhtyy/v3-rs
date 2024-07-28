@@ -112,6 +112,7 @@ impl<M: Middleware + 'static> V3Pool for Pool<M> {
 
             // we know this should happen because we check that the diff is a multiple of the spacing
             while current != ending {
+                tracing::trace!("current tick for stream: {:?}", current);
                 let pool = self.pool.clone();
                 futs.push(async move {
                     let tick = pool
@@ -123,9 +124,9 @@ impl<M: Middleware + 'static> V3Pool for Pool<M> {
                 });
 
                 if down {
-                    current = current.up(self.tick_spacing);
-                } else {
                     current = current.down(self.tick_spacing);
+                } else {
+                    current = current.up(self.tick_spacing);
                 }
             }
 
