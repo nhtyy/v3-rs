@@ -42,6 +42,13 @@ impl<'a, P: V3Pool> Deltas<'a, P> {
     }
 
     pub fn update(&mut self, liquidity: Float, sqrt_price: SqrtPrice, target_price: SqrtPrice) {
+        tracing::trace!(
+            "updating deltas with liquidity: {}, sqrt_price: {}, target_price: {}",
+            liquidity,
+            sqrt_price,
+            target_price
+        );
+
         self.token0_amount +=
             token0_delta(sqrt_price.clone(), target_price.clone(), liquidity.clone());
 

@@ -39,7 +39,7 @@ pub trait V3Pool: Send + Sync + Sized + 'static {
     /// into this tick as price is increasing
     async fn tick(&self, tick: Tick) -> PoolResult<Float, Self::BackendError>;
 
-    /// returns the deltas (accounting for direction) between [starting, ending]
+    /// returns the deltas (accounting for direction) for ticks `[starting, ending)`
     /// if starting == ending, returns []
     /// ### Notice:
     /// implementors should ensure that the returned amount is correct for the direction
