@@ -21,7 +21,7 @@ pub fn price_to_tick(price: Price) -> Tick {
             // change of base log[1.0001](price)
             (price.into_inner().ln() / TICK_BASE.clone().ln())
                 .to_i32_saturating_round(rug::float::Round::Down)
-                .expect("Can create a valid i32 from a valid float"),
+                .expect("Can create a valid i32 from a valid price"),
         )
     }
 }
@@ -42,7 +42,7 @@ pub fn price_to_initializable_tick(price: Price, tick_spacing: TickSpacing) -> T
         Tick::new_unchecked(
             (spacing_scalar.floor() * spacing)
                 .to_i32_saturating_round(rug::float::Round::Down)
-                .expect("Can create a valid i32 from a valid float"),
+                .expect("Can create a valid i32 from a valid price"),
         )
     }
 }
@@ -50,5 +50,5 @@ pub fn price_to_initializable_tick(price: Price, tick_spacing: TickSpacing) -> T
 /// 1.0001^tick
 pub fn tick_to_price(tick: Tick) -> Price {
     // saftey: tick is assumed to be in range to produce a valid price
-    unsafe { Price::new_unchecked(TICK_BASE.clone().pow(*tick).floor()) }
+    unsafe { Price::new_unchecked(TICK_BASE.clone().pow(*tick)) }
 }

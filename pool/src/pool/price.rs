@@ -90,6 +90,7 @@ pub trait PriceExt: V3Pool {
             return Ok(deltas);
         };
 
+        tracing::trace!("starting tick loop");
         let mut ticks = ticks.into_iter();
         while let Some(delta) = ticks.next() {
             let current_tick = next_tick;
