@@ -11,8 +11,8 @@ use crate::V3Pool;
 #[derive(Clone)]
 pub struct Deltas<'a, P: V3Pool> {
     pool: &'a P,
-    token0_amount: TokenAmount<'a, P>,
-    token1_amount: TokenAmount<'a, P>,
+    pub token0_amount: TokenAmount<'a, P>,
+    pub token1_amount: TokenAmount<'a, P>,
 }
 
 impl<'a, P: V3Pool> std::fmt::Debug for Deltas<'a, P> {

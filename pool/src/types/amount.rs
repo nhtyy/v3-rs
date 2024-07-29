@@ -62,6 +62,11 @@ impl<'a, P: V3Pool> TokenAmount<'a, P> {
     }
 
     #[inline]
+    pub fn to_float(self) -> Float {
+        self.amount
+    }
+
+    #[inline]
     pub fn normalized_amount(&self) -> Float {
         Self::scale_down(self.pool, self.token, self.amount.clone())
     }
