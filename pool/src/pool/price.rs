@@ -75,7 +75,7 @@ pub trait PriceExt: V3Pool {
 
             // get the tick range from the current tick to the target tick
             self
-                .tick_range(starting_lower_tick, target_lower_tick.up(self.tick_spacing()))?
+                .tick_range(next_tick, target_lower_tick.down(self.tick_spacing()))?
                 .try_collect()
                 .await?
         } else {

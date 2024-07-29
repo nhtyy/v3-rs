@@ -36,7 +36,6 @@ pub fn price_to_initializable_tick(price: Price, tick_spacing: TickSpacing) -> T
     let spacing_scalar = tick / spacing;
 
     // get the interger part of n and turn it back into the tick
-    // round down cause the evm i guess?
     // saftey: price is assumed to be in range to produce a valid tick
     unsafe {
         Tick::new_unchecked(

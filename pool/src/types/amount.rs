@@ -286,7 +286,7 @@ impl<'a, P: V3Pool> std::fmt::Display for TokenAmount<'a, P> {
 impl<'a, P: V3Pool> std::fmt::Debug for TokenAmount<'a, P> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("TokenAmount")
-            .field("amount", &self.normalized_amount())
+            .field("normalized_amount", &self.normalized_amount())
             .field("token", &self.token)
             .field("token0", &self.pool.token0())
             .field("token1", &self.pool.token1())

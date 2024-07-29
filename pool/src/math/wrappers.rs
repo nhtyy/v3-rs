@@ -61,29 +61,33 @@ impl Tick {
         Self(tick)
     }
 
-    /// Returns the next tick
+    /// Returns the next initializable tick
     /// 
     /// ### Warning: this function will not return a tick greater than 887272
     pub fn up(self, spacing: TickSpacing) -> Self {
-        let up = self.0 + spacing as i32;
+        let spacing = spacing as i32;
+        let scalar = self.0 / spacing + 1;
+        let next_tick = scalar * spacing;
 
-        if up > 887272 {
+        if next_tick > 887272 {
             Self(887272)
         } else {
-            unsafe { Self::new_unchecked(up) }
+            unsafe { Self::new_unchecked(next_tick) }
         }
     }
 
-    /// Returns the previous tick
+    /// Returns the previous initializable tick
     /// 
     /// ### Warning: this function will not return a tick less than -887272
     pub fn down(self, spacing: TickSpacing) -> Self {
-        let down = self.0 - spacing as i32;
+        let spacing = spacing as i32;
+        let scalar = self.0 / spacing - 1;
+        let prev_tick = scalar * spacing;
 
-        if down < -887272 {
+        if prev_tick < -887272 {
             Self(-887272)
         } else {
-            unsafe { Self::new_unchecked(down) }
+            unsafe { Self::new_unchecked(prev_tick) }
         }
     }
 }
