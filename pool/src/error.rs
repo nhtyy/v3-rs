@@ -11,7 +11,8 @@ pub enum V3PoolError<E: Error> {
     BackendError(E),
     BoundsError(BoundsError),
     PoolNotFound,
-    BadTickRange(Tick, Tick, TickSpacing)
+    BadTickRange(Tick, Tick, TickSpacing),
+    TooManyTicks,
 }
 
 impl<E: Error> Error for V3PoolError<E> {}
@@ -29,7 +30,8 @@ impl<E: Error> std::fmt::Display for V3PoolError<E> {
             V3PoolError::BackendError(e) => write!(f, "V3PoolError::BackendError: {}", e),
             V3PoolError::BoundsError(e) => write!(f, "V3PoolError::BoundsError: {}", e),
             V3PoolError::PoolNotFound => write!(f, "V3PoolError: No Pool found"),
-            V3PoolError::BadTickRange(a, b, c) => write!(f, "V3PoolError: Bad tick range: {:?} {:?} {:?}", a, b, c)
+            V3PoolError::BadTickRange(a, b, c) => write!(f, "V3PoolError: Bad tick range: {:?} {:?} {:?}", a, b, c),
+            V3PoolError::TooManyTicks => write!(f, "V3PoolError: Too many ticks"),
         }
     }
 }

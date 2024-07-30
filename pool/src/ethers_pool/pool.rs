@@ -80,6 +80,10 @@ impl<M: Middleware + 'static> V3Pool for Pool<M> {
         let differnce = differnce.abs();
         let capactiy = differnce / spacing + 1;
 
+        if capactiy > 500 {
+            return Err(V3PoolError::TooManyTicks);
+        }
+
         tracing::trace!("getting tick range");
         tracing::trace!(
             "starting: {:?}, ending: {:?}, spacing: {:?}",
