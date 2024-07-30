@@ -132,38 +132,6 @@ impl<'a, P> From<PoolPrice<'a, P>> for U256 {
     }
 }
 
-//////////////////////// Comparsion ////////////////////////
-
-impl<'a, P: V3Pool> PartialEq for PoolPrice<'a, P> {
-    fn eq(&self, other: &Self) -> bool {
-        #[cfg(debug_assertions)]
-        {
-            if self.pool.address() != other.pool.address() {
-                tracing::warn!("comparing pool prices for different pools");
-                tracing::warn!("pool1: {:?}", self.pool.address());
-                tracing::warn!("pool2: {:?}", other.pool.address());
-            }
-        }
-
-        self.price.eq(&other.price)
-    }
-}
-
-impl<'a, P: V3Pool> PartialOrd for PoolPrice<'a, P> {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        #[cfg(debug_assertions)]
-        {
-            if self.pool.address() != other.pool.address() {
-                tracing::warn!("comparing pool prices for different pools");
-                tracing::warn!("pool1: {:?}", self.pool.address());
-                tracing::warn!("pool2: {:?}", other.pool.address());
-            }
-        }
-
-        self.price.partial_cmp(&other.price)
-    }
-}
-
 impl<'a, P: V3Pool> std::fmt::Display for PoolPrice<'a, P> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.normalized())
@@ -173,7 +141,7 @@ impl<'a, P: V3Pool> std::fmt::Display for PoolPrice<'a, P> {
 impl<'a, P: V3Pool> std::fmt::Debug for PoolPrice<'a, P> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("PoolPrice")
-            .field("price", &self.normalized())
+            .field("price_normalized", &self.normalized())
             .field("token0", &self.pool.token0())
             .field("token1", &self.pool.token1())
             .field("token0_decimals", &self.pool.token0_decimals())
@@ -233,35 +201,4 @@ mod test {
 
         assert_eq!(pool_price.normalized(), price);
     }
-
-    #[test]
-    fn test_gt() {
-        let pool = MockPool {
-            token0: Default::default(),
-            token1: Default::default(),
-            token0_decimals: 5,
-            token1_decimals: 10,
-            fee: crate::FeeTier::Mid,
-        };
-
-        let price = rug::Float::with_val(100, 100);
-        let pool_price = crate::types::price::PoolPrice::from_normalized(
-            &pool,
-            price.clone(),
-            crate::types::Token::One,
-        )
-        .unwrap();
-
-        let price2 = rug::Float::with_val(100, 200);
-        let pool_price2 = crate::types::price::PoolPrice::from_normalized(
-            &pool,
-            price2.clone(),
-            crate::types::Token::One,
-        )
-        .unwrap();
-
-        assert!(pool_price2 > pool_price);
-    }
-
-    
 }
