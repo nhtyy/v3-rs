@@ -19,6 +19,12 @@ impl IntoFloat for U256 {
     }
 }
 
+impl IntoFloat for f64 {
+    fn into_float(&self) -> Float {
+        Float::with_val(100, *self)
+    }
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum ConversionError {
     #[error("Value is negative")]
