@@ -19,13 +19,11 @@ use crate::V3Pool;
 /// - PartialOrd & PartialEq with Self, [Float] and [U256] assuming theyre scaled
 /// - Into<T> returns the scaled amounts
 /// - Add with [U256] and [rug::Float] are assumed to be scaled
-/// - PartialOrd & PartialEq with native types will scale the values
-/// - Add and Sub with native types will scale the native types (u8, u16, u32, f16, f32) // todo
 ///
-/// we purposefully dont implement Add and Sub with Self so were not repsonsible for checking
-/// the amounts are actually the same type of token
-///
-/// this types makes no guarantees that the inner float is a valid amount
+/// - PartialOrd & PartialEq with native types will scale the the values (u8, u16, u32, f16, f32)
+/// - Add and Sub with native types will scale the native types (u8, u16, u32, f16, f32)
+/// 
+/// No guarntees the amount is in range
 pub struct TokenAmount<'a, P> {
     pool: &'a P,
     token: Token,
@@ -93,7 +91,7 @@ impl<'a, P: V3Pool> TokenAmount<'a, P> {
 
     /// Create a token amount from a scaled amount
     #[inline]
-    pub unsafe fn from_scaled(pool: &'a P, token: Token, amount: Float) -> Self {
+    pub fn from_scaled(pool: &'a P, token: Token, amount: Float) -> Self {
         Self {
             pool,
             token,
@@ -178,10 +176,10 @@ impl<'a, P> Add<Float> for TokenAmount<'a, P> {
 }
 
 impl<'a, P> Add<TokenAmount<'a, P>> for Float {
-    type Output = Float;
+    type Output = TokenAmount<'a, P>;
 
     fn add(self, rhs: TokenAmount<'a, P>) -> Self::Output {
-        self + rhs.amount
+        rhs + self
     }
 }
 
@@ -211,6 +209,12 @@ impl<'a, P> Add<TokenAmount<'a, P>> for U256 {
 
 impl<'a, P> AddAssign<Float> for TokenAmount<'a, P> {
     fn add_assign(&mut self, rhs: Float) {
+        self.amount += rhs;
+    }
+}
+
+impl<'a, P> AddAssign<&Float> for TokenAmount<'a, P> {
+    fn add_assign(&mut self, rhs: &Float) {
         self.amount += rhs;
     }
 }
@@ -271,6 +275,29 @@ impl<'a, P> PartialOrd<TokenAmount<'a, P>> for U256 {
     }
 }
 
+pub trait IntoTokenAmount<'a, P: V3Pool> {
+    fn into_token_amount(self, pool: &'a P, token: Token) -> TokenAmount<'a, P>;
+}
+
+impl<'a, P: V3Pool> IntoTokenAmount<'a, P> for TokenAmount<'a, P> {
+    #[inline]
+    fn into_token_amount(self, _pool: &'a P, _token: Token) -> TokenAmount<'a, P> {
+        self
+    }
+}
+
+impl<'a, P: V3Pool> IntoTokenAmount<'a, P> for Float {
+    fn into_token_amount(self, pool: &'a P, token: Token) -> TokenAmount<'a, P> {
+        TokenAmount::from_scaled(pool, token, self)
+    }
+}
+
+impl<'a, P: V3Pool> IntoTokenAmount<'a, P> for U256 {
+    fn into_token_amount(self, pool: &'a P, token: Token) -> TokenAmount<'a, P> {
+        TokenAmount::from_scaled(pool, token, self.into_float())
+    }
+}
+
 impl_token_amount_cmp_eq_native!(TokenAmount);
 
 impl<'a, P: V3Pool> std::fmt::Display for TokenAmount<'a, P> {
@@ -298,12 +325,12 @@ impl<'a, P: V3Pool> std::fmt::Debug for TokenAmount<'a, P> {
 
 #[cfg(test)]
 mod test {
+    use super::TokenAmount;
     use crate::{FeeTier, Token};
     use ethers::types::Address;
-    use super::TokenAmount;
-    use rug::Float;
-    use rug::ops::Pow;
     use ethers::types::U256;
+    use rug::ops::Pow;
+    use rug::Float;
 
     use crate::types::tests::MockPool;
 
@@ -333,12 +360,10 @@ mod test {
             fee: FeeTier::Mid,
         };
 
-        unsafe {
-            let amount = TokenAmount::from_scaled(&pool, Token::Zero, Float::with_val(100, 100));
-            let amount2 = Float::with_val(100, 100);
+        let amount = TokenAmount::from_scaled(&pool, Token::Zero, Float::with_val(100, 100));
+        let amount2 = Float::with_val(100, 100);
 
-            assert_eq!(amount, amount2);
-        }
+        assert_eq!(amount, amount2);
     }
 
     #[test]
@@ -351,12 +376,11 @@ mod test {
             fee: FeeTier::Mid,
         };
 
-        unsafe {
+       
             let amount = TokenAmount::from_scaled(&pool, Token::Zero, Float::with_val(100, 100));
             let amount2 = U256::from(100);
 
             assert_eq!(amount, amount2);
-        }
     }
 
     #[test]
@@ -386,13 +410,12 @@ mod test {
             fee: FeeTier::Mid,
         };
 
-        unsafe {
+       
             let amount = TokenAmount::from_scaled(&pool, Token::Zero, Float::with_val(100, 100));
             let amount2 = Float::with_val(100, 99);
 
             assert!(amount > amount2);
             assert!(amount2 < amount);
-        }
     }
 
     #[test]
@@ -405,13 +428,12 @@ mod test {
             fee: FeeTier::Mid,
         };
 
-        unsafe {
+       
             let amount = TokenAmount::from_scaled(&pool, Token::Zero, Float::with_val(100, 100));
             let amount2 = U256::from(99);
-    
+
             assert!(amount > amount2);
             assert!(amount2 < amount);
-        }
     }
 
     #[test]
@@ -474,11 +496,13 @@ mod test {
             fee: FeeTier::Mid,
         };
 
-        unsafe {
+       
             let amount = TokenAmount::from_scaled(&pool, Token::Zero, Float::with_val(100, 100));
             let result = amount + Float::with_val(100, 100);
-    
-            assert_eq!(result, TokenAmount::from_scaled(&pool, Token::Zero, Float::with_val(10, 200)));   
-        }
+
+            assert_eq!(
+                result,
+                TokenAmount::from_scaled(&pool, Token::Zero, Float::with_val(10, 200))
+            );
     }
 }

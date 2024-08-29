@@ -1,4 +1,4 @@
-use crate::math::{SqrtPrice, Tick};
+use crate::{math::{SqrtPrice, Tick}, TokenAmount};
 use ethers::{
     contract::{abigen, Multicall, MULTICALL_ADDRESS},
     providers::Middleware,
@@ -6,7 +6,6 @@ use ethers::{
 };
 use futures::future::try_join_all;
 use rug::Float;
-use std::collections::HashMap;
 use std::future::IntoFuture;
 
 use crate::math::liquidity::{real_token0_from_l, real_token1_from_l};
@@ -21,11 +20,27 @@ abigen!(
 );
 
 #[derive(Debug, Clone)]
-pub struct Balances {
-    pub token0: Address,
-    pub token1: Address,
-    pub amounts: HashMap<Address, Float>,
+pub struct Balances<'a, P: V3Pool> {
+    tokens: [TokenAmount<'a, P>; 2]
 }
+
+impl<'a ,P: V3Pool> Balances<'a, P> {
+    pub fn new(token0: TokenAmount<'a, P>, token1: TokenAmount<'a, P>) -> Self {
+        Self {
+            tokens: [token0, token1]
+        }
+    }
+
+    pub fn token0(&self) -> &TokenAmount<'a, P> {
+        &self.tokens[0]
+    }
+
+    pub fn token1(&self) -> &TokenAmount<'a, P> {
+        &self.tokens[1]
+    }
+}
+
+
 
 fn float_zero() -> Float {
     Float::with_val(18, 0)
@@ -57,11 +72,11 @@ impl<M: Middleware + 'static> PositionManager<M> {
         Ok(try_join_all(pos_futs).await?)
     }
 
-    pub async fn total_positions_balance<P: V3Pool>(
-        &self,
-        pool: &P,
+    pub async fn total_positions_balance<'a, P: V3Pool>(
+        &'a self,
+        pool: &'a P,
         owner: Address,
-    ) -> anyhow::Result<Balances> {
+    ) -> anyhow::Result<Balances<'a, P>> {
         let positions = self
             .all_positions(owner)
             .await?
@@ -78,34 +93,28 @@ impl<M: Middleware + 'static> PositionManager<M> {
         let sqrt_price = pool.sqrt_price().await?;
 
         let init = Balances {
-            token0: *pool.token0(),
-            token1: *pool.token1(),
-            amounts: vec![
-                (*pool.token0(), float_zero()),
-                (*pool.token1(), float_zero()),
-            ]
-            .into_iter()
-            .collect(),
+            tokens: [
+                TokenAmount::zero(pool, crate::Token::Zero),
+                TokenAmount::zero(pool, crate::Token::One),
+            ],
         };
 
         Ok(positions
-            .into_iter()
-            .map(|pos| pos.token_balances(sqrt_price.clone()))
+            .iter()
+            .map(|pos| pos.token_balances(pool, sqrt_price.clone()))
             .collect::<Result<Vec<_>, _>>()?
             .into_iter()
-            .fold(init, |acc, balance| Balances {
-                amounts: acc
-                    .amounts
-                    .into_iter()
-                    .map(|(k, v)| (k, v + balance.amounts.get(&k).unwrap_or(&float_zero())))
-                    .collect(),
-                ..acc
+            .fold(init, |mut acc, balance| {
+                acc.tokens[0] += balance.token0().as_float();
+                acc.tokens[1] += balance.token1().as_float();
+
+                acc
             }))
     }
 }
 
 impl PositionsReturn {
-    pub fn token_balances(&self, sqrt_price: SqrtPrice) -> anyhow::Result<Balances> {
+    pub fn token_balances<'a, P: V3Pool>(&'a self, pool: &'a P, sqrt_price: SqrtPrice) -> anyhow::Result<Balances<'a, P>> {
         let current_tick = price_to_tick(sqrt_price.clone().into());
 
         // saftey: comes from pool
@@ -133,13 +142,10 @@ impl PositionsReturn {
             Float::with_val(18, 0)
         };
 
-        Ok(Balances {
-            token0: self.token_0,
-            token1: self.token_1,
-            amounts: vec![(self.token_0, token0_amount), (self.token_1, token1_amount)]
-                .into_iter()
-                .collect(),
-        })
+        Ok(Balances::new(
+            TokenAmount::from_scaled(pool, crate::Token::Zero, token0_amount),
+            TokenAmount::from_scaled(pool, crate::Token::One, token1_amount)
+        ))
     }
 }
 

@@ -63,14 +63,15 @@ impl Tick {
 
     /// Returns the next initializable tick
     /// 
-    /// ### Warning: this function will not return a tick greater than 887272
+    /// # Panics: 
+    /// - if the next tick is out of bounds
     pub fn up(self, spacing: TickSpacing) -> Self {
         let spacing = spacing as i32;
         let scalar = self.0 / spacing + 1;
         let next_tick = scalar * spacing;
 
         if next_tick > 887272 {
-            Self(887272)
+            panic!("Up Tick OOB")
         } else {
             unsafe { Self::new_unchecked(next_tick) }
         }
@@ -78,14 +79,15 @@ impl Tick {
 
     /// Returns the previous initializable tick
     /// 
-    /// ### Warning: this function will not return a tick less than -887272
+    /// # Panics: 
+    /// - if the next tick is out of bounds
     pub fn down(self, spacing: TickSpacing) -> Self {
         let spacing = spacing as i32;
         let scalar = self.0 / spacing - 1;
         let prev_tick = scalar * spacing;
 
         if prev_tick < -887272 {
-            Self(-887272)
+            panic!("Down Tick OOB")
         } else {
             unsafe { Self::new_unchecked(prev_tick) }
         }

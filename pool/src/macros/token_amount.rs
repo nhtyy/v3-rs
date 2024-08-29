@@ -32,6 +32,19 @@ macro_rules! impl_token_amount_cmp_eq_inner {
                     scaled.floor().partial_cmp(&other.amount)
                 }
             }
+
+            impl<'a, P: V3Pool> IntoTokenAmount<'a, P> for $native {
+                fn into_token_amount(self, pool: &'a P, token: Token) -> $token_amount<'a, P> {
+                    let decimals = match token {
+                        Token::Zero => pool.token0_decimals(),
+                        Token::One => pool.token1_decimals(),
+                    };
+
+                    let scaled = rug::Float::with_val(100, self) * rug::Float::with_val(100, 10).pow(decimals);
+
+                    $token_amount::from_scaled(pool, token, scaled.floor())
+                }
+            }
         )*
     }
 }
@@ -45,14 +58,12 @@ macro_rules! impl_token_amount_cmp_eq_native {
             u16,
             u32,
             u64,
-            u128,
             f32,
             f64,
             i8,
             i16,
             i32,
             i64,
-            i128,
         }
     };
 }

@@ -77,24 +77,18 @@ impl<'a, P: V3Pool> Deltas<'a, P> {
             token1_amount.is_sign_negative(),
         ) {
             (true, false) => {
-                // Saftey: amounts came from valid token amounts
-                unsafe {
-                    TokenAmount::from_scaled(
-                        self.pool,
-                        super::Token::One,
-                        token1_amount.clone() / decay,
-                    )
-                }
+                TokenAmount::from_scaled(
+                    self.pool,
+                    super::Token::One,
+                    token1_amount.clone() / decay,
+                )
             }
             (false, true) => {
-                // Saftey: amounts came from valid token amounts
-                unsafe {
-                    TokenAmount::from_scaled(
-                        self.pool,
-                        super::Token::Zero,
-                        token0_amount.clone() / decay,
-                    )
-                }
+                TokenAmount::from_scaled(
+                    self.pool,
+                    super::Token::Zero,
+                    token0_amount.clone() / decay,
+                )
             }
             (_, _) => unreachable!("Got two non zero same sign deltas, this is a bug"),
         }

@@ -79,7 +79,7 @@ pub trait V3Pool: Send + Sync + Sized + 'static {
     /// The sqrt price of the pool
     async fn sqrt_price(&self) -> PoolResult<SqrtPrice, Self::BackendError> {
         // saftey: sqrt price comes from pool
-        Ok(unsafe { SqrtPrice::new_unchecked(self.sqrt_price_x96().await? / X96.clone()) })
+        Ok(unsafe { SqrtPrice::new_unchecked(self.sqrt_price_x96().await? / &*X96) })
     }
 
     /// Returns the current pool price in terms of the numeraire

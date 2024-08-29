@@ -46,6 +46,7 @@ pub trait IntoU256 {
 }
 
 impl IntoU256 for Float {
+    #[inline]
     fn into_u256(&self) -> Result<U256, ConversionError> {
         if self.is_infinite() {
             return Err(ConversionError::IsInfinte);

@@ -11,10 +11,7 @@ use ethers::types::U256;
 /// and there are helpers for converting between human readable prices and scaled prices
 ///
 /// ## Comparions
-/// A pool price is directly comparable with other pool prices.
-/// If youre working with a price which is not in pool form (say from an oracle), its reccomended to use the
-/// [PoolPrice::from_normalized] to convert it to a pool price, or you could use [PoolPrice::normalized] and
-/// compare floats directly.
+/// A pool price should be [Self::normalized] to remove the decimals and this will be the human readable price
 ///
 /// ## Conversions
 /// - all Into<T> implementations will return the scaled price accounting for the internal decimals of the pool
@@ -161,7 +158,7 @@ mod test {
         let pool = MockPool {
             token0: Default::default(),
             token1: Default::default(),
-            token0_decimals: 5,
+            token0_decimals: 4,
             token1_decimals: 10,
             fee: crate::FeeTier::Mid,
         };
@@ -177,7 +174,7 @@ mod test {
         println!("{:?}", rug::Float::from(pool_price.clone()).to_string());
         assert_eq!(
             rug::Float::from(pool_price),
-            price * rug::Float::with_val(100, 10).pow(5)
+            price * rug::Float::with_val(100, 10).pow(6)
         );
     }
 
