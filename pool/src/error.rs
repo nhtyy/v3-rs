@@ -1,4 +1,5 @@
 use std::error::Error;
+use ethers::contract::MulticallError;
 use rug::float::ParseFloatError;
 use crate::math::Tick;
 
@@ -13,6 +14,7 @@ pub enum V3PoolError<E: Error> {
     PoolNotFound,
     BadTickRange(Tick, Tick, TickSpacing),
     TooManyTicks,
+    MulticallError(String),
 }
 
 impl<E: Error> Error for V3PoolError<E> {}
@@ -32,6 +34,7 @@ impl<E: Error> std::fmt::Display for V3PoolError<E> {
             V3PoolError::PoolNotFound => write!(f, "V3PoolError: No Pool found"),
             V3PoolError::BadTickRange(a, b, c) => write!(f, "V3PoolError: Bad tick range: {:?} {:?} {:?}", a, b, c),
             V3PoolError::TooManyTicks => write!(f, "V3PoolError: Too many ticks"),
+            V3PoolError::MulticallError(e) => write!(f, "V3PoolError: Multicall error: {}", e),
         }
     }
 }

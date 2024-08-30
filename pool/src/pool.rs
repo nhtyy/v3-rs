@@ -2,6 +2,8 @@ pub mod liquidity;
 pub mod price;
 pub mod swap;
 
+use std::future::Future;
+
 use crate::error::V3PoolError;
 use crate::math::{Price, SqrtPrice, Tick};
 
@@ -27,7 +29,7 @@ lazy_static! {
 pub trait V3Pool: Send + Sync + Sized + 'static {
     type BackendError: std::error::Error + Send + Sync + 'static;
     /// An ordred stream of ticks
-    type Ticks: Stream<Item = Result<Float, V3PoolError<Self::BackendError>>> + Send + Unpin;
+    type Ticks<'a>: Future<Output = PoolResult<Vec<i128>, Self::BackendError>> + 'a + Send;
 
     // The current in range liquidity of the pool
     async fn current_liquidity(&self) -> PoolResult<Float, Self::BackendError>;
@@ -45,7 +47,7 @@ pub trait V3Pool: Send + Sync + Sized + 'static {
     /// implementors should ensure that the returned amount is correct for the direction
     /// Since tick delta should be added as price increase, a tick range can account for the opposite case
     /// if ending < starting, you can flip the signs of the deltas
-    fn tick_range(&self, starting: Tick, ending: Tick) -> PoolResult<Self::Ticks, Self::BackendError>;
+    fn tick_range<'a>(&'a self, starting: Tick, ending: Tick) -> Self::Ticks<'a>;
 
     /// The fee tier of the pool
     fn fee(&self) -> &FeeTier;

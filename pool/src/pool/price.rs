@@ -43,7 +43,7 @@ pub trait PriceExt: V3Pool {
         // if were in the same tick we want to just move to the price and exit from there
         // if were going up lets move to the boundry, include that boundry and then move into the loop
         // if were going down lets move to the boundry, include that boundry and then move into the loop
-        let ticks: Vec<Float> = if starting_lower_tick < target_lower_tick {
+        let ticks: Vec<i128> = if starting_lower_tick < target_lower_tick {
             tracing::debug!("current lower tick is less than target lower tick");
             tracing::debug!("were momving the price up");
             next_tick = starting_lower_tick.up(self.tick_spacing());
@@ -57,9 +57,7 @@ pub trait PriceExt: V3Pool {
             );
 
             // get the tick range from the current tick to the target tick
-            self.tick_range(next_tick, target_lower_tick.up(self.tick_spacing()))?
-                .try_collect()
-                .await?
+            self.tick_range(next_tick, target_lower_tick.up(self.tick_spacing())).await?
         } else if starting_lower_tick > target_lower_tick {
             tracing::debug!("current lower tick is greater than target lower tick");
             tracing::debug!("were moving the price down");
@@ -75,9 +73,7 @@ pub trait PriceExt: V3Pool {
 
             // get the tick range from the current tick to the target tick
             self
-                .tick_range(next_tick, target_lower_tick.down(self.tick_spacing()))?
-                .try_collect()
-                .await?
+                .tick_range(next_tick, target_lower_tick.down(self.tick_spacing())).await?
         } else {
             tracing::debug!("current lower tick is equal to target lower tick");
 

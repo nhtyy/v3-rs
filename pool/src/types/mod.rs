@@ -1,6 +1,6 @@
+pub mod amount;
 pub mod deltas;
 pub mod price;
-pub mod amount;
 
 /// The index of the token in the pool
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -74,8 +74,8 @@ impl TickSpacing {
 mod tests {
     use crate::{error::V3PoolError, math::Tick, FeeTier, PoolResult};
     use ethers::types::Address;
-    use std::convert::Infallible;
     use rug::Float;
+    use std::convert::Infallible;
 
     pub(crate) struct MockPool {
         pub token0: Address,
@@ -88,7 +88,7 @@ mod tests {
     #[async_trait::async_trait]
     impl crate::V3Pool for MockPool {
         type BackendError = Infallible;
-        type Ticks = futures::stream::Empty<Result<Float, V3PoolError<Self::BackendError>>>;
+        type Ticks<'a> = std::future::Ready<PoolResult<Vec<i128>, Self::BackendError>>;
 
         fn token0(&self) -> &Address {
             &self.token0
@@ -130,9 +130,8 @@ mod tests {
             &self,
             _starting: Tick,
             _ending: Tick,
-        ) -> PoolResult<Self::Ticks, Self::BackendError> {
-            Ok(futures::stream::empty())
+        ) -> Self::Ticks<'_> {
+            std::future::ready(Ok(vec![]))
         }
     }
-
 }

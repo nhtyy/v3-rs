@@ -1,3 +1,4 @@
+use std::ops::Mul;
 use std::pin::Pin;
 
 use crate::error::V3PoolError;
@@ -6,11 +7,8 @@ use crate::traits::IntoFloat;
 // use crate::pool::{FeeTier, Tick, TickSpacing, V3Pool, V3PoolError};
 use crate::{FeeTier, TickSpacing, V3Pool};
 use bindings::{ERC20Contract, V3PoolContract};
-use ethers::contract::ContractError;
-use ethers::{
-    providers::Middleware,
-    types::Address,
-};
+use ethers::contract::{ContractError, MULTICALL_ADDRESS};
+use ethers::{contract::Multicall, providers::Middleware, types::Address};
 use futures::stream::{FuturesUnordered, StreamExt};
 use futures::Stream;
 use rug::Float;
@@ -23,6 +21,7 @@ pub struct Pool<M: Middleware> {
     token0_decimals: u8,
     token1_decimals: u8,
     fee: FeeTier,
+    middleware: std::sync::Arc<M>,
 }
 
 impl<M: Middleware + 'static> Pool<M> {
@@ -46,6 +45,7 @@ impl<M: Middleware + 'static> Pool<M> {
 
         Ok(Self {
             pool,
+            middleware,
             tick_spacing: fee.as_spacing(),
             token0,
             token1,
@@ -58,21 +58,17 @@ impl<M: Middleware + 'static> Pool<M> {
 
 #[async_trait::async_trait]
 impl<M: Middleware + 'static> V3Pool for Pool<M> {
-    type Ticks = Pin<
+    type Ticks<'a> = Pin<
         Box<
-            dyn Stream<Item = Result<Float, V3PoolError<Self::BackendError>>>
-                + Send,
+            dyn std::future::Future<Output = Result<Vec<i128>, V3PoolError<Self::BackendError>>>
+                + Send + 'a,
         >,
     >;
 
     type BackendError = ContractError<M>;
 
     /// will error if the ticks arent n * spacing apart
-    fn tick_range(
-        &self,
-        starting: Tick,
-        ending: Tick,
-    ) -> Result<Self::Ticks, V3PoolError<Self::BackendError>> {
+    fn tick_range<'a>(&'a self, starting: Tick, ending: Tick) -> Self::Ticks<'a> {
         let spacing = self.tick_spacing as i32;
         let mut down: bool = false;
 
@@ -81,7 +77,7 @@ impl<M: Middleware + 'static> V3Pool for Pool<M> {
         let capactiy = differnce / spacing + 1;
 
         if capactiy > 500 {
-            return Err(V3PoolError::TooManyTicks);
+            return Box::pin(async { Err(V3PoolError::TooManyTicks) });
         }
 
         tracing::trace!("getting tick range");
@@ -94,11 +90,15 @@ impl<M: Middleware + 'static> V3Pool for Pool<M> {
         tracing::trace!("difference: {}, capacity: {}", differnce, capactiy);
 
         if differnce % (spacing as i32) != 0 {
-            return Err(V3PoolError::BadTickRange(
-                starting,
-                ending,
-                self.tick_spacing,
-            ));
+            let tick_spacing = self.tick_spacing.clone();
+
+            return Box::pin(async move {
+                Err(V3PoolError::BadTickRange(
+                    starting,
+                    ending,
+                    tick_spacing,
+                ))
+            });
         }
 
         if starting > ending {
@@ -106,26 +106,18 @@ impl<M: Middleware + 'static> V3Pool for Pool<M> {
         }
 
         if starting == ending {
-            return Ok(Box::pin(futures::stream::empty()));
+            return Box::pin(async { Ok(vec![]) });
         }
 
-        let futs = {
+        Box::pin(async move {
+            let mut multicall =
+                Multicall::new(self.middleware.clone(), Some(MULTICALL_ADDRESS)).await.expect("can create multicall instance");
+
             let mut futs = Vec::with_capacity(capactiy as usize);
-
             let mut current = starting;
-
             // we know this should happen because we check that the diff is a multiple of the spacing
             while current != ending {
-                tracing::trace!("current tick for stream: {:?}", current);
-                let pool = self.pool.clone();
-                futs.push(async move {
-                    let tick = pool
-                        .ticks(current.into())
-                        .await
-                        .map_err(V3PoolError::backend_error)?;
-        
-                    Ok(Float::with_val(100, tick.1))
-                });
+                futs.push(self.pool.ticks(current.into()));
 
                 if down {
                     current = current.down(self.tick_spacing);
@@ -134,20 +126,25 @@ impl<M: Middleware + 'static> V3Pool for Pool<M> {
                 }
             }
 
-            futs
-        };
+            multicall.add_calls(false, futs);
 
-        if down {
-            Ok(Box::pin(futs
+            Ok(multicall
+                .call_array::<(
+                    u128,
+                    i128,
+                    ::ethers::core::types::U256,
+                    ::ethers::core::types::U256,
+                    i64,
+                    ::ethers::core::types::U256,
+                    u32,
+                    bool,
+                )>()
+                .await
+                .map_err(|e| V3PoolError::MulticallError(e.to_string()))?
                 .into_iter()
-                .collect::<FuturesUnordered<_>>()
-                .map(|res| res.map(|x| Float::with_val(100, -x)))))
-        } else {
-            Ok(Box::pin(futs
-                .into_iter()
-                .collect::<FuturesUnordered<_>>()
-                .map(|res| res.map(|x| Float::with_val(100, x)))))
-        }
+                .map(|x| if down { -x.1 } else { x.1 })
+                .collect::<Vec<_>>())
+        })
     }
 
     async fn current_liquidity(&self) -> Result<Float, V3PoolError<Self::BackendError>> {
