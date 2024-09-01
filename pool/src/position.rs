@@ -1,6 +1,6 @@
 use crate::math::{SqrtPrice, Tick};
 use ethers::{
-    contract::abigen,
+    contract::{abigen, Multicall, MULTICALL_ADDRESS},
     providers::Middleware,
     types::{Address, U256},
 };
@@ -12,6 +12,7 @@ use std::future::IntoFuture;
 use crate::math::liquidity::{real_token0_from_l, real_token1_from_l};
 use crate::math::tick::{price_to_tick, tick_to_price};
 use crate::pool::V3Pool;
+use ethers::contract::Contract;
 
 abigen!(
     PositionManager,
@@ -33,19 +34,23 @@ fn float_zero() -> Float {
 impl<M: Middleware + 'static> PositionManager<M> {
     pub async fn all_positions(&self, owner: Address) -> anyhow::Result<Vec<PositionsReturn>> {
         // Get the number of postions this user has
-        let balance: u64 = self.balance_of(owner).await?.as_u64();
-        let mut id_futs: Vec<_> = Vec::new();
+        let balance = self.balance_of(owner).await?.as_u64();
+
+        let mut multicall: Multicall<M> = Multicall::new(self.client().clone(), Some(MULTICALL_ADDRESS)).await?;
 
         // Get all the positon ids
         for i in 0..balance {
-            id_futs.push(
-                self.token_of_owner_by_index(owner, U256::from(i))
-                    .into_future(),
+            multicall.add_call(
+                self.token_of_owner_by_index(owner, U256::from(i)),
+                false,
             );
         }
 
-        let pos_futs = try_join_all(id_futs)
-            .await?
+        let ids = multicall.call_array::<U256>().await?;
+
+        multicall.clear_calls();
+
+        let pos_futs = ids
             .into_iter()
             .map(|id| async move { self.positions(id).await.map(|pos| pos.into()) });
 
