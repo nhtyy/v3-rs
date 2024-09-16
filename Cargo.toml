@@ -1,5 +1,5 @@
 [package]
-name = "v3-pool"
+name = "v3-rs"
 version = "0.1.0"
 edition = "2021"
 
