@@ -89,19 +89,17 @@ pub trait PriceExt: V3Pool {
         tracing::trace!("starting tick loop");
         let mut ticks = ticks.into_iter();
         while let Some(delta) = ticks.next() {
-            let current_tick = next_tick;
-
             current_liquidity += delta;
             if up {
-                next_tick = current_tick.up(self.tick_spacing());
-                current_sqrt_price = tick_to_price(current_tick).into();
+                next_tick = next_tick.up(self.tick_spacing());
+                current_sqrt_price = tick_to_price(next_tick).into();
 
                 let next_tick_price: SqrtPrice = tick_to_price(next_tick).into();
                 if next_tick_price > target_sqrt_price {
                     deltas.update(
-                        current_liquidity.clone(),
-                        current_sqrt_price.clone(),
-                        target_sqrt_price.clone(),
+                        current_liquidity,
+                        current_sqrt_price,
+                        target_sqrt_price,
                     );
 
                     tracing::trace!(?up, "exiting tick loop");
@@ -109,15 +107,15 @@ pub trait PriceExt: V3Pool {
                     break;
                 }
             } else {
-                next_tick = current_tick.down(self.tick_spacing());
-                current_sqrt_price = tick_to_price(current_tick).into();
+                next_tick = next_tick.down(self.tick_spacing());
+                current_sqrt_price = tick_to_price(next_tick).into();
 
                 let next_tick_price: SqrtPrice = tick_to_price(next_tick).into();
                 if next_tick_price < target_sqrt_price {
                     deltas.update(
-                        current_liquidity.clone(),
-                        current_sqrt_price.clone(),
-                        target_sqrt_price.clone(),
+                        current_liquidity,
+                        current_sqrt_price,
+                        target_sqrt_price,
                     );
 
                     tracing::trace!(?up, "exiting tick loop");
@@ -128,7 +126,7 @@ pub trait PriceExt: V3Pool {
 
             deltas.update(
                 current_liquidity.clone(),
-                current_sqrt_price.clone(),
+                current_sqrt_price,
                 tick_to_price(next_tick).into(),
             );
         }

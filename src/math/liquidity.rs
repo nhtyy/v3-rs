@@ -11,7 +11,7 @@ pub fn real_token0_from_l(sqrt_current: SqrtPrice, sqrt_upper: SqrtPrice, l: Flo
 
     if real.is_sign_negative() {
         // return 0
-        Float::with_val(64, 0)
+        Float::with_val(256, 0)
     } else {
         real.floor()
     }
@@ -23,7 +23,7 @@ pub fn real_token1_from_l(sqrt_currnet: SqrtPrice, sqrt_lower: SqrtPrice, l: Flo
 
     if real.is_sign_negative() {
         // return 0
-        Float::with_val(64, 0)
+        Float::with_val(256, 0)
     } else {
         real.floor()
     }

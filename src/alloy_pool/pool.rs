@@ -195,6 +195,7 @@ where
 
         let multicall = MultiCall::new_checked(self.pool.provider()).await?;
         let mut aggregate = multicall.aggregate();
+        aggregate.reserve(capactiy as usize);
 
         let mut current = starting;
         // we know this should happen because we check that the diff is a multiple of the spacing
