@@ -105,8 +105,7 @@ where
             P: Provider<T, N>,
             N: Network,
         {
-            let multicall = MultiCall::new_checked(this.provider()).await?;
-            let mut aggregate = multicall.aggregate();
+            let mut aggregate = MultiCall::new_checked(this.provider()).await.map(|m| m.aggregate())?;
 
             let mut i = U256::ZERO;
             while i < balance {
@@ -115,7 +114,7 @@ where
             }
 
             let ids = aggregate.call().await?;
-            let mut aggregate = multicall.aggregate();
+            let mut aggregate = MultiCall::new_checked(this.provider()).await.map(|m| m.aggregate())?;
             aggregate.extend(ids.into_iter().map(|id| this.positions(id._0)));
 
             aggregate.call().await

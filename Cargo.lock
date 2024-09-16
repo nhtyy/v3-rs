@@ -38,7 +38,7 @@ checksum = "5c6cb57a04249c6480766f7f7cef5467412af1490f8d1e243141daddada3264f"
 [[package]]
 name = "alloy"
 version = "0.3.5"
-source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#b4ea2605f6335f616aee5dff336959fc82e415fb"
+source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#25d5987d29e28c61e5784a8d8a67385e862f9915"
 dependencies = [
  "alloy-consensus",
  "alloy-contract",
@@ -72,7 +72,7 @@ dependencies = [
 [[package]]
 name = "alloy-consensus"
 version = "0.3.5"
-source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#b4ea2605f6335f616aee5dff336959fc82e415fb"
+source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#25d5987d29e28c61e5784a8d8a67385e862f9915"
 dependencies = [
  "alloy-eips",
  "alloy-primitives",
@@ -85,7 +85,7 @@ dependencies = [
 [[package]]
 name = "alloy-contract"
 version = "0.3.5"
-source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#b4ea2605f6335f616aee5dff336959fc82e415fb"
+source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#25d5987d29e28c61e5784a8d8a67385e862f9915"
 dependencies = [
  "alloy-chains",
  "alloy-dyn-abi",
@@ -158,7 +158,7 @@ dependencies = [
 [[package]]
 name = "alloy-eips"
 version = "0.3.5"
-source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#b4ea2605f6335f616aee5dff336959fc82e415fb"
+source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#25d5987d29e28c61e5784a8d8a67385e862f9915"
 dependencies = [
  "alloy-eip2930",
  "alloy-eip7702",
@@ -175,7 +175,7 @@ dependencies = [
 [[package]]
 name = "alloy-genesis"
 version = "0.3.5"
-source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#b4ea2605f6335f616aee5dff336959fc82e415fb"
+source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#25d5987d29e28c61e5784a8d8a67385e862f9915"
 dependencies = [
  "alloy-primitives",
  "alloy-serde",
@@ -197,7 +197,7 @@ dependencies = [
 [[package]]
 name = "alloy-json-rpc"
 version = "0.3.5"
-source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#b4ea2605f6335f616aee5dff336959fc82e415fb"
+source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#25d5987d29e28c61e5784a8d8a67385e862f9915"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
@@ -210,7 +210,7 @@ dependencies = [
 [[package]]
 name = "alloy-network"
 version = "0.3.5"
-source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#b4ea2605f6335f616aee5dff336959fc82e415fb"
+source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#25d5987d29e28c61e5784a8d8a67385e862f9915"
 dependencies = [
  "alloy-consensus",
  "alloy-eips",
@@ -230,7 +230,7 @@ dependencies = [
 [[package]]
 name = "alloy-network-primitives"
 version = "0.3.5"
-source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#b4ea2605f6335f616aee5dff336959fc82e415fb"
+source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#25d5987d29e28c61e5784a8d8a67385e862f9915"
 dependencies = [
  "alloy-eips",
  "alloy-primitives",
@@ -263,7 +263,7 @@ dependencies = [
 [[package]]
 name = "alloy-provider"
 version = "0.3.5"
-source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#b4ea2605f6335f616aee5dff336959fc82e415fb"
+source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#25d5987d29e28c61e5784a8d8a67385e862f9915"
 dependencies = [
  "alloy-chains",
  "alloy-consensus",
@@ -299,7 +299,7 @@ dependencies = [
 [[package]]
 name = "alloy-pubsub"
 version = "0.3.5"
-source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#b4ea2605f6335f616aee5dff336959fc82e415fb"
+source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#25d5987d29e28c61e5784a8d8a67385e862f9915"
 dependencies = [
  "alloy-json-rpc",
  "alloy-primitives",
@@ -339,7 +339,7 @@ dependencies = [
 [[package]]
 name = "alloy-rpc-client"
 version = "0.3.5"
-source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#b4ea2605f6335f616aee5dff336959fc82e415fb"
+source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#25d5987d29e28c61e5784a8d8a67385e862f9915"
 dependencies = [
  "alloy-json-rpc",
  "alloy-primitives",
@@ -363,7 +363,7 @@ dependencies = [
 [[package]]
 name = "alloy-rpc-types"
 version = "0.3.5"
-source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#b4ea2605f6335f616aee5dff336959fc82e415fb"
+source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#25d5987d29e28c61e5784a8d8a67385e862f9915"
 dependencies = [
  "alloy-rpc-types-engine",
  "alloy-rpc-types-eth",
@@ -374,7 +374,7 @@ dependencies = [
 [[package]]
 name = "alloy-rpc-types-engine"
 version = "0.3.5"
-source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#b4ea2605f6335f616aee5dff336959fc82e415fb"
+source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#25d5987d29e28c61e5784a8d8a67385e862f9915"
 dependencies = [
  "alloy-consensus",
  "alloy-eips",
@@ -386,7 +386,7 @@ dependencies = [
 [[package]]
 name = "alloy-rpc-types-eth"
 version = "0.3.5"
-source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#b4ea2605f6335f616aee5dff336959fc82e415fb"
+source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#25d5987d29e28c61e5784a8d8a67385e862f9915"
 dependencies = [
  "alloy-consensus",
  "alloy-eips",
@@ -406,7 +406,7 @@ dependencies = [
 [[package]]
 name = "alloy-serde"
 version = "0.3.5"
-source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#b4ea2605f6335f616aee5dff336959fc82e415fb"
+source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#25d5987d29e28c61e5784a8d8a67385e862f9915"
 dependencies = [
  "alloy-primitives",
  "serde",
@@ -416,7 +416,7 @@ dependencies = [
 [[package]]
 name = "alloy-signer"
 version = "0.3.5"
-source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#b4ea2605f6335f616aee5dff336959fc82e415fb"
+source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#25d5987d29e28c61e5784a8d8a67385e862f9915"
 dependencies = [
  "alloy-primitives",
  "async-trait",
@@ -429,7 +429,7 @@ dependencies = [
 [[package]]
 name = "alloy-signer-local"
 version = "0.3.5"
-source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#b4ea2605f6335f616aee5dff336959fc82e415fb"
+source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#25d5987d29e28c61e5784a8d8a67385e862f9915"
 dependencies = [
  "alloy-consensus",
  "alloy-network",
@@ -517,7 +517,7 @@ dependencies = [
 [[package]]
 name = "alloy-transport"
 version = "0.3.5"
-source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#b4ea2605f6335f616aee5dff336959fc82e415fb"
+source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#25d5987d29e28c61e5784a8d8a67385e862f9915"
 dependencies = [
  "alloy-json-rpc",
  "base64",
@@ -535,7 +535,7 @@ dependencies = [
 [[package]]
 name = "alloy-transport-http"
 version = "0.3.5"
-source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#b4ea2605f6335f616aee5dff336959fc82e415fb"
+source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#25d5987d29e28c61e5784a8d8a67385e862f9915"
 dependencies = [
  "alloy-json-rpc",
  "alloy-transport",
@@ -549,7 +549,7 @@ dependencies = [
 [[package]]
 name = "alloy-transport-ipc"
 version = "0.3.5"
-source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#b4ea2605f6335f616aee5dff336959fc82e415fb"
+source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#25d5987d29e28c61e5784a8d8a67385e862f9915"
 dependencies = [
  "alloy-json-rpc",
  "alloy-pubsub",
@@ -567,7 +567,7 @@ dependencies = [
 [[package]]
 name = "alloy-transport-ws"
 version = "0.3.5"
-source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#b4ea2605f6335f616aee5dff336959fc82e415fb"
+source = "git+https://github.com/nhtyy/alloy?branch=n/multicall#25d5987d29e28c61e5784a8d8a67385e862f9915"
 dependencies = [
  "alloy-pubsub",
  "alloy-transport",
