@@ -94,6 +94,7 @@ where
     ) -> Result<Vec<PositionsReturn>, alloy::contract::Error> {
         let balance = self.balanceOf(owner).call().await?;
 
+        // todo branch if not multicall chain?
         async fn all_positions_multicall<T, P, N>(
             this: &Manager<T, P, N>,
             balance: U256,

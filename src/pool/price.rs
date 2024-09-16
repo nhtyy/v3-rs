@@ -9,7 +9,7 @@ use crate::V3Pool;
 pub trait PriceExt: V3Pool {
     /// Returns the amount of token0 and token1 needed to move the pool price to the target price
     /// price_of_0_in_1 should not include the underlying nominal units
-    async fn amounts_to_move_price(
+    async fn optimal_swap_for_price(
         &self,
         new_price: Price,
     ) -> Result<Deltas<Self>, V3PoolError<Self::BackendError>> {
@@ -50,7 +50,7 @@ pub trait PriceExt: V3Pool {
             // move the price to the next tick
             deltas.update(
                 current_liquidity.clone(),
-                current_sqrt_price.clone(),
+                current_sqrt_price,
                 tick_to_price(next_tick).into(),
             );
 
@@ -66,7 +66,7 @@ pub trait PriceExt: V3Pool {
             // move the price to the next tick
             deltas.update(
                 current_liquidity.clone(),
-                current_sqrt_price.clone(),
+                current_sqrt_price,
                 tick_to_price(next_tick).into(),
             );
 
