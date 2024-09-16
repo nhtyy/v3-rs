@@ -70,9 +70,10 @@ impl IntoU256 for Float {
         }
 
         // rounds floor
-        let i = self.to_integer().expect(
-            "Failed to convert Float to integer even though done our checks, this is a bug",
-        ).to_string();
+        let i = self
+            .to_integer()
+            .expect("Failed to convert Float to integer even though done our checks, this is a bug")
+            .to_string();
 
         Ok(U256::from_str_radix(&i, 10).expect(
             "Failed to convert Float to U256 even though weve done our checks, this is a bug",

@@ -1,6 +1,7 @@
 use std::ops::Add;
 use std::ops::AddAssign;
 
+use alloy::primitives::Address;
 use alloy::primitives::U256;
 use rug::ops::Pow;
 use rug::Float;
@@ -14,7 +15,7 @@ use crate::V3Pool;
 ///
 /// There are helpers for converting between human readable amounts and scaled amounts
 /// and display and debug implementations return the human readable amount
-/// 
+///
 /// # Scaling Assumption
 /// - PartialOrd & PartialEq with Self, [Float] and [U256] assuming theyre scaled
 /// - Into<T> returns the scaled amounts
@@ -22,7 +23,7 @@ use crate::V3Pool;
 ///
 /// - PartialOrd & PartialEq with native types will scale the the values (u8, u16, u32, f16, f32)
 /// - Add and Sub with native types will scale the native types (u8, u16, u32, f16, f32)
-/// 
+///
 /// No guarntees the amount is in range
 pub struct TokenAmount<'a, P> {
     pool: &'a P,
@@ -52,6 +53,14 @@ impl<'a, P: V3Pool> TokenAmount<'a, P> {
     #[inline]
     pub fn token(&self) -> &Token {
         &self.token
+    }
+
+    #[inline]
+    pub fn token_address(&self) -> &Address {
+        match self.token {
+            Token::Zero => self.pool.token0(),
+            Token::One => self.pool.token1(),
+        }
     }
 
     #[inline]
@@ -307,153 +316,146 @@ impl<'a, P: V3Pool> std::fmt::Debug for TokenAmount<'a, P> {
     }
 }
 
-// #[cfg(test)]
-// mod test {
-//     use super::TokenAmount;
-//     use crate::{FeeTier, Token};
-//     use ethers::types::Address;
-//     use ethers::types::U256;
-//     use rug::ops::Pow;
-//     use rug::Float;
+#[cfg(test)]
+mod test {
+    use super::TokenAmount;
+    use crate::{FeeTier, Token};
+    use alloy::primitives::Address;
+    use alloy::primitives::U256;
+    use rug::ops::Pow;
+    use rug::Float;
 
-//     use crate::types::tests::MockPool;
+    use crate::types::tests::MockPool;
 
-//     #[test]
-//     fn test_eq_float() {
-//         let pool = MockPool {
-//             token0: Address::zero(),
-//             token1: Address::zero(),
-//             token0_decimals: 18,
-//             token1_decimals: 18,
-//             fee: FeeTier::Mid,
-//         };
+    #[test]
+    fn test_eq_float() {
+        let pool = MockPool {
+            token0: Address::ZERO,
+            token1: Address::ZERO,
+            token0_decimals: 18,
+            token1_decimals: 18,
+            fee: FeeTier::Mid,
+        };
 
-//         let amount = TokenAmount::from_scaled(&pool, Token::Zero, Float::with_val(100, 100));
-//         let amount2 = Float::with_val(100, 100);
+        let amount = TokenAmount::from_scaled(&pool, Token::Zero, Float::with_val(100, 100));
+        let amount2 = Float::with_val(100, 100);
 
-//         assert_eq!(amount, amount2);
-//     }
+        assert_eq!(amount, amount2);
+    }
 
-//     #[test]
-//     fn test_eq_u256() {
-//         let pool = MockPool {
-//             token0: Address::zero(),
-//             token1: Address::zero(),
-//             token0_decimals: 18,
-//             token1_decimals: 18,
-//             fee: FeeTier::Mid,
-//         };
+    #[test]
+    fn test_eq_u256() {
+        let pool = MockPool {
+            token0: Address::ZERO,
+            token1: Address::ZERO,
+            token0_decimals: 18,
+            token1_decimals: 18,
+            fee: FeeTier::Mid,
+        };
 
-       
-//             let amount = TokenAmount::from_scaled(&pool, Token::Zero, Float::with_val(100, 100));
-//             let amount2 = U256::from(100);
+        let amount = TokenAmount::from_scaled(&pool, Token::Zero, Float::with_val(100, 100));
+        let amount2 = U256::from(100);
 
-//             assert_eq!(amount, amount2);
-//     }
+        assert_eq!(amount, amount2);
+    }
 
-//     #[test]
-//     fn test_cmp_float() {
-//         let pool = MockPool {
-//             token0: Address::zero(),
-//             token1: Address::zero(),
-//             token0_decimals: 18,
-//             token1_decimals: 18,
-//             fee: FeeTier::Mid,
-//         };
+    #[test]
+    fn test_cmp_float() {
+        let pool = MockPool {
+            token0: Address::ZERO,
+            token1: Address::ZERO,
+            token0_decimals: 18,
+            token1_decimals: 18,
+            fee: FeeTier::Mid,
+        };
 
-       
-//             let amount = TokenAmount::from_scaled(&pool, Token::Zero, Float::with_val(100, 100));
-//             let amount2 = Float::with_val(100, 99);
+        let amount = TokenAmount::from_scaled(&pool, Token::Zero, Float::with_val(100, 100));
+        let amount2 = Float::with_val(100, 99);
 
-//             assert!(amount > amount2);
-//             assert!(amount2 < amount);
-//     }
+        assert!(amount > amount2);
+        assert!(amount2 < amount);
+    }
 
-//     #[test]
-//     fn test_cmp_u256() {
-//         let pool = MockPool {
-//             token0: Address::zero(),
-//             token1: Address::zero(),
-//             token0_decimals: 18,
-//             token1_decimals: 18,
-//             fee: FeeTier::Mid,
-//         };
+    #[test]
+    fn test_cmp_u256() {
+        let pool = MockPool {
+            token0: Address::ZERO,
+            token1: Address::ZERO,
+            token0_decimals: 18,
+            token1_decimals: 18,
+            fee: FeeTier::Mid,
+        };
 
-       
-//             let amount = TokenAmount::from_scaled(&pool, Token::Zero, Float::with_val(100, 100));
-//             let amount2 = U256::from(99);
+        let amount = TokenAmount::from_scaled(&pool, Token::Zero, Float::with_val(100, 100));
+        let amount2 = U256::from(99);
 
-//             assert!(amount > amount2);
-//             assert!(amount2 < amount);
-//     }
+        assert!(amount > amount2);
+        assert!(amount2 < amount);
+    }
 
-//     #[test]
-//     fn test_eq_native_u8() {
-//         let pool = MockPool {
-//             token0: Address::zero(),
-//             token1: Address::zero(),
-//             token0_decimals: 18,
-//             token1_decimals: 18,
-//             fee: FeeTier::Mid,
-//         };
+    #[test]
+    fn test_eq_native_u8() {
+        let pool = MockPool {
+            token0: Address::ZERO,
+            token1: Address::ZERO,
+            token0_decimals: 18,
+            token1_decimals: 18,
+            fee: FeeTier::Mid,
+        };
 
-//         let amount = 100_u8;
-//         let token_amount = TokenAmount::from_amount(&pool, Token::Zero, amount.into());
+        let amount = 100_u8;
+        let token_amount = TokenAmount::from_human_readable(&pool, Token::Zero, amount.into());
 
-//         assert_eq!(amount, token_amount);
-//     }
+        assert_eq!(amount, token_amount);
+    }
 
-//     #[test]
-//     fn test_eq_native_f64() {
-//         let pool = MockPool {
-//             token0: Address::zero(),
-//             token1: Address::zero(),
-//             token0_decimals: 18,
-//             token1_decimals: 18,
-//             fee: FeeTier::Mid,
-//         };
+    #[test]
+    fn test_eq_native_f64() {
+        let pool = MockPool {
+            token0: Address::ZERO,
+            token1: Address::ZERO,
+            token0_decimals: 18,
+            token1_decimals: 18,
+            fee: FeeTier::Mid,
+        };
 
-//         let amount = 100.0;
-//         let token_amount = TokenAmount::from_amount(&pool, Token::Zero, amount);
+        let amount = 100.0;
+        let token_amount = TokenAmount::from_human_readable(&pool, Token::Zero, amount);
 
-//         assert_eq!(amount, token_amount);
-//     }
+        assert_eq!(amount, token_amount);
+    }
 
-//     #[test]
-//     fn test_returns_scaled_version() {
-//         let pool = MockPool {
-//             token0: Address::zero(),
-//             token1: Address::zero(),
-//             token0_decimals: 18,
-//             token1_decimals: 18,
-//             fee: FeeTier::Mid,
-//         };
+    #[test]
+    fn test_returns_scaled_version() {
+        let pool = MockPool {
+            token0: Address::ZERO,
+            token1: Address::ZERO,
+            token0_decimals: 18,
+            token1_decimals: 18,
+            fee: FeeTier::Mid,
+        };
 
-//         let scalar = Float::with_val(100, 10).pow(18);
+        let scalar = Float::with_val(100, 10).pow(18);
 
-//         let amount = TokenAmount::from_amount(&pool, Token::Zero, 100.0);
-//         let scaled = amount.as_float();
+        let amount = TokenAmount::from_human_readable(&pool, Token::Zero, 100.0);
+        let scaled = amount.as_float();
 
-//         assert_eq!(*scaled, Float::with_val(100, 100) * scalar);
-//     }
+        assert_eq!(*scaled, Float::with_val(100, 100) * scalar);
+    }
 
-//     #[test]
-//     fn test_add_float() {
-//         let pool = MockPool {
-//             token0: Address::zero(),
-//             token1: Address::zero(),
-//             token0_decimals: 18,
-//             token1_decimals: 18,
-//             fee: FeeTier::Mid,
-//         };
+    #[test]
+    fn test_add_float() {
+        let pool = MockPool {
+            token0: Address::ZERO,
+            token1: Address::ZERO,
+            token0_decimals: 18,
+            token1_decimals: 18,
+            fee: FeeTier::Mid,
+        };
 
-       
-//             let amount = TokenAmount::from_scaled(&pool, Token::Zero, Float::with_val(100, 100));
-//             let result = amount + Float::with_val(100, 100);
+        let amount = TokenAmount::from_scaled(&pool, Token::Zero, Float::with_val(100, 100));
+        let result = amount + Float::with_val(100, 100);
 
-//             assert_eq!(
-//                 result,
-//                 Float::with_val(10, 200)
-//             );
-//     }
-// }
+        assert_eq!(result, Float::with_val(10, 200));
+    }
+}

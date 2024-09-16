@@ -4,4 +4,4 @@ pub use basis_points::ApplyBps;
 mod float;
 pub use float::IntoFloat;
 
-pub use float::{IntoU256, ConversionError};
+pub use float::{ConversionError, IntoU256};

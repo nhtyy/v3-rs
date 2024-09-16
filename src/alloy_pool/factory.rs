@@ -1,10 +1,10 @@
 use super::pool::Pool;
 use super::pool::V3PoolContract::V3PoolContractInstance;
 use crate::{error::V3PoolError, FeeTier};
+use alloy::network::Network;
 use alloy::primitives::Address;
 use alloy::providers::Provider;
 use alloy::transports::Transport;
-use alloy::network::Network;
 
 alloy::sol! {
     #[derive(Debug)]
@@ -26,7 +26,7 @@ alloy::sol! {
 
 pub use FactoryInterface::FactoryInterfaceInstance as Factory;
 
-impl<T, P, N> Factory<T, P, N> 
+impl<T, P, N> Factory<T, P, N>
 where
     T: Transport + Clone,
     P: Provider<T, N>,
@@ -64,11 +64,14 @@ where
         second_token: Address,
         fee: FeeTier,
         provider: P2,
-    ) -> Result<Pool<T, P2, N>, V3PoolError<alloy::contract::Error>> 
+    ) -> Result<Pool<T, P2, N>, V3PoolError<alloy::contract::Error>>
     where
         P2: Provider<T, N>,
     {
-        let address = self.pool_address(first_token, second_token, fee).await.map_err(V3PoolError::backend_error)?;
+        let address = self
+            .pool_address(first_token, second_token, fee)
+            .await
+            .map_err(V3PoolError::backend_error)?;
 
         if address == Address::ZERO {
             return Err(V3PoolError::PoolNotFound);
@@ -76,6 +79,8 @@ where
 
         let bindings = V3PoolContractInstance::new(address, provider);
 
-        Pool::new(bindings, fee).await.map_err(V3PoolError::backend_error)
+        Pool::new(bindings, fee)
+            .await
+            .map_err(V3PoolError::backend_error)
     }
 }

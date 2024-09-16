@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use crate::error::V3PoolError;
 use crate::math::Tick;
 use crate::position::Balances;
@@ -8,7 +6,7 @@ use crate::traits::IntoFloat;
 use crate::{FeeTier, Manager, PoolResult, TickSpacing, V3Pool};
 use alloy::contract::MultiCall;
 use alloy::network::Network;
-use alloy::primitives::{Address, Signed};
+use alloy::primitives::Address;
 use alloy::providers::Provider;
 use alloy::transports::Transport;
 
@@ -136,7 +134,7 @@ where
     }
 
     /// Returns all the NFT liquidty positions for this manager
-    async fn lp_balance<'a>(
+    pub async fn lp_balance<'a>(
         &'a self,
         manager: &Manager<T, P, N>,
         who: Address,
@@ -201,10 +199,7 @@ where
         let mut current = starting;
         // we know this should happen because we check that the diff is a multiple of the spacing
         while current != ending {
-            aggregate.add_call(
-                self.pool
-                    .ticks(current.into()),
-            );
+            aggregate.add_call(self.pool.ticks(current.into()));
 
             if down {
                 current = current.down(self.tick_spacing);
@@ -217,7 +212,13 @@ where
             .call()
             .await?
             .into_iter()
-            .map(|x| if down { -x.liquidityNet } else { x.liquidityNet })
+            .map(|x| {
+                if down {
+                    -x.liquidityNet
+                } else {
+                    x.liquidityNet
+                }
+            })
             .collect::<Vec<_>>())
     }
 

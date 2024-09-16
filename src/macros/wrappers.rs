@@ -1,5 +1,5 @@
 /// Implements conversions and operations on the type
-/// 
+///
 /// The type must impl `Add`, `Sub`, `Mul`, `Div`
 macro_rules! impl_wrappers {
     (

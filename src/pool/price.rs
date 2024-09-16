@@ -1,11 +1,9 @@
-use futures::TryStreamExt;
-use rug::Float;
 
 use crate::error::V3PoolError;
-use crate::math::{Price, SqrtPrice, Tick};
-use crate::V3Pool;
 use crate::math::tick::{price_to_initializable_tick, tick_to_price};
+use crate::math::{Price, SqrtPrice, Tick};
 use crate::types::deltas::Deltas;
+use crate::V3Pool;
 
 #[async_trait::async_trait]
 pub trait PriceExt: V3Pool {
@@ -26,7 +24,7 @@ pub trait PriceExt: V3Pool {
         tracing::debug!("target sqrt price: {:?}", target_sqrt_price);
 
         // at this point we dont know if were going up or down
-        // but either way these are always the "lower" prices but 
+        // but either way these are always the "lower" prices but
         let starting_lower_tick =
             price_to_initializable_tick(current_sqrt_price.clone().into(), self.tick_spacing());
 
@@ -57,7 +55,8 @@ pub trait PriceExt: V3Pool {
             );
 
             // get the tick range from the current tick to the target tick
-            self.tick_range(next_tick, target_lower_tick.up(self.tick_spacing())).await?
+            self.tick_range(next_tick, target_lower_tick.up(self.tick_spacing()))
+                .await?
         } else if starting_lower_tick > target_lower_tick {
             tracing::debug!("current lower tick is greater than target lower tick");
             tracing::debug!("were moving the price down");
@@ -72,8 +71,8 @@ pub trait PriceExt: V3Pool {
             );
 
             // get the tick range from the current tick to the target tick
-            self
-                .tick_range(next_tick, target_lower_tick.down(self.tick_spacing())).await?
+            self.tick_range(next_tick, target_lower_tick.down(self.tick_spacing()))
+                .await?
         } else {
             tracing::debug!("current lower tick is equal to target lower tick");
 
@@ -86,6 +85,7 @@ pub trait PriceExt: V3Pool {
             return Ok(deltas);
         };
 
+        // todo we could make this faster with swapping and avoiding clones
         tracing::trace!("starting tick loop");
         let mut ticks = ticks.into_iter();
         while let Some(delta) = ticks.next() {

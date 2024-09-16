@@ -8,7 +8,6 @@ use alloy::{
     network::Network,
     primitives::{Address, U256},
     providers::Provider,
-    sol_types::ContractError,
     transports::Transport,
 };
 use rug::Float;
@@ -137,7 +136,7 @@ where
         &self,
         pool: &'p Pool,
         owner: Address,
-    ) -> Result<Balances<'p, Pool>, V3PoolError<Pool::BackendError>> 
+    ) -> Result<Balances<'p, Pool>, V3PoolError<Pool::BackendError>>
     where
         Pool: V3Pool<BackendError = alloy::contract::Error>,
     {

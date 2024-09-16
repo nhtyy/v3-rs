@@ -51,7 +51,11 @@ pub trait V3Pool: Send + Sync + Sized {
     /// implementors should ensure that the returned amount is correct for the direction
     /// Since tick delta should be added as price increase, a tick range can account for the opposite case
     /// if ending < starting, you can flip the signs of the deltas
-    async fn tick_range(&self, starting: Tick, ending: Tick) -> PoolResult<Vec<i128>, Self::BackendError>;
+    async fn tick_range(
+        &self,
+        starting: Tick,
+        ending: Tick,
+    ) -> PoolResult<Vec<i128>, Self::BackendError>;
 
     /// Returns the position of the token in the pool
     fn position_of(&self, token: &Address) -> Option<Token> {

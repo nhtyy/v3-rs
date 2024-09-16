@@ -1,7 +1,7 @@
-use alloy::primitives::Address;
 use alloy::primitives::address;
+use alloy::primitives::Address;
 
-mod mainnet {
+pub mod mainnet {
     use super::*;
 
     pub const FACTORY: Address = address!("1F98431c8aD98523631AE4a59f267346ea31F984");

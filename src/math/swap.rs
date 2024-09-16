@@ -13,7 +13,7 @@ pub fn token0_delta(sqrt_price: SqrtPrice, target_price: SqrtPrice, liquidity: F
 }
 
 /// How much token1 reserves will change given a change in price and a fixed amount of liquidity
-pub fn token1_delta(sqrt_price: SqrtPrice, target_price: SqrtPrice , liquidity: Float) -> Float {
+pub fn token1_delta(sqrt_price: SqrtPrice, target_price: SqrtPrice, liquidity: Float) -> Float {
     let d1 = liquidity * (target_price - sqrt_price);
 
     d1.floor()

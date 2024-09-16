@@ -1,6 +1,6 @@
-use std::error::Error;
-use rug::float::ParseFloatError;
 use crate::math::Tick;
+use rug::float::ParseFloatError;
+use std::error::Error;
 
 use crate::math::BoundsError;
 use crate::TickSpacing;

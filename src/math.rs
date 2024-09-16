@@ -3,4 +3,4 @@ pub mod swap;
 pub mod tick;
 
 mod wrappers;
-pub use wrappers::{Price, SqrtPrice, Tick, BoundsError};
+pub use wrappers::{BoundsError, Price, SqrtPrice, Tick};

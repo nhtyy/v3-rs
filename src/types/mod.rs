@@ -1,4 +1,4 @@
-use alloy::primitives::{Uint, uint};
+use alloy::primitives::{uint, Uint};
 
 pub mod amount;
 pub mod deltas;
@@ -76,68 +76,67 @@ impl TickSpacing {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use crate::{math::Tick, FeeTier, PoolResult};
-//     use ethers::types::Address;
-//     use rug::Float;
-//     use std::convert::Infallible;
+#[cfg(test)]
+mod tests {
+    use crate::{math::Tick, FeeTier, PoolResult};
+    use alloy::primitives::Address;
+    use rug::Float;
+    use std::convert::Infallible;
 
-//     pub(crate) struct MockPool {
-//         pub token0: Address,
-//         pub token1: Address,
-//         pub token0_decimals: u8,
-//         pub token1_decimals: u8,
-//         pub fee: FeeTier,
-//     }
+    pub(crate) struct MockPool {
+        pub token0: Address,
+        pub token1: Address,
+        pub token0_decimals: u8,
+        pub token1_decimals: u8,
+        pub fee: FeeTier,
+    }
 
-//     #[async_trait::async_trait]
-//     impl crate::V3Pool for MockPool {
-//         type BackendError = Infallible;
-//         type Ticks<'a> = std::future::Ready<PoolResult<Vec<i128>, Self::BackendError>>;
+    #[async_trait::async_trait]
+    impl crate::V3Pool for MockPool {
+        type BackendError = Infallible;
 
-//         fn token0(&self) -> &Address {
-//             &self.token0
-//         }
+        fn token0(&self) -> &Address {
+            &self.token0
+        }
 
-//         fn token0_decimals(&self) -> &u8 {
-//             &self.token0_decimals
-//         }
+        fn token0_decimals(&self) -> &u8 {
+            &self.token0_decimals
+        }
 
-//         fn token1(&self) -> &Address {
-//             &self.token1
-//         }
+        fn token1(&self) -> &Address {
+            &self.token1
+        }
 
-//         fn token1_decimals(&self) -> &u8 {
-//             &self.token1_decimals
-//         }
+        fn token1_decimals(&self) -> &u8 {
+            &self.token1_decimals
+        }
 
-//         fn fee(&self) -> &FeeTier {
-//             &self.fee
-//         }
+        fn fee(&self) -> &FeeTier {
+            &self.fee
+        }
 
-//         fn address(&self) -> Address {
-//             Address::zero()
-//         }
+        fn address(&self) -> Address {
+            Address::ZERO
+        }
 
-//         async fn current_liquidity(&self) -> PoolResult<Float, Self::BackendError> {
-//             Ok(Float::with_val(100, 100))
-//         }
+        async fn current_liquidity(&self) -> PoolResult<Float, Self::BackendError> {
+            Ok(Float::with_val(100, 100))
+        }
 
-//         async fn sqrt_price_x96(&self) -> PoolResult<Float, Self::BackendError> {
-//             Ok(Float::with_val(100, 100))
-//         }
+        async fn sqrt_price_x96(&self) -> PoolResult<Float, Self::BackendError> {
+            Ok(Float::with_val(100, 100))
+        }
 
-//         async fn tick(&self, _tick: Tick) -> PoolResult<Float, Self::BackendError> {
-//             Ok(Float::with_val(100, 100))
-//         }
+        async fn tick(&self, _tick: Tick) -> PoolResult<Float, Self::BackendError> {
+            Ok(Float::with_val(100, 100))
+        }
 
-//         fn tick_range(
-//             &self,
-//             _starting: Tick,
-//             _ending: Tick,
-//         ) -> Self::Ticks<'_> {
-//             std::future::ready(Ok(vec![]))
-//         }
-//     }
-// }
+        async fn tick_range(
+            &self,
+            _starting: Tick,
+            _ending: Tick,
+        ) -> PoolResult<Vec<i128>, Self::BackendError> {
+            Ok(vec![])
+        }
+    }
+}

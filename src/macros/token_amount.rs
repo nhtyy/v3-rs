@@ -50,7 +50,7 @@ macro_rules! impl_token_amount_cmp_eq_inner {
 }
 
 /// Implement token amount comparison and equality for native types
-/// 
+///
 /// Native types will be scaled to match the token amount's decimals
 macro_rules! impl_token_amount_cmp_eq_native {
     ($name:ident) => {
