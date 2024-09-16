@@ -2,7 +2,7 @@
 use crate::error::V3PoolError;
 use crate::math::tick::{price_to_initializable_tick, tick_to_price};
 use crate::math::{Price, SqrtPrice, Tick};
-use crate::types::deltas::Deltas;
+use crate::types::Deltas;
 use crate::V3Pool;
 
 #[async_trait::async_trait]

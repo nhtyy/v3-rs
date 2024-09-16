@@ -1,8 +1,12 @@
 use alloy::primitives::{uint, Uint};
 
-pub mod amount;
-pub mod deltas;
-pub mod price;
+mod amount;
+mod deltas;
+mod price;
+
+pub use amount::*;
+pub use deltas::*;
+pub use price::*;
 
 /// The index of the token in the pool
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

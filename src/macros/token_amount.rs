@@ -34,10 +34,10 @@ macro_rules! impl_token_amount_cmp_eq_inner {
             }
 
             impl<'a, P: V3Pool> IntoTokenAmount<'a, P> for $native {
-                fn into_token_amount(self, pool: &'a P, token: Token) -> $token_amount<'a, P> {
+                fn into_token_amount(self, pool: &'a P, token: TokenIdx) -> $token_amount<'a, P> {
                     let decimals = match token {
-                        Token::Zero => pool.token0_decimals(),
-                        Token::One => pool.token1_decimals(),
+                        TokenIdx::Zero => pool.token0_decimals(),
+                        TokenIdx::One => pool.token1_decimals(),
                     };
 
                     let scaled = rug::Float::with_val(100, self) * rug::Float::with_val(100, 10).pow(decimals);

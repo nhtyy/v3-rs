@@ -158,8 +158,8 @@ where
 
         let init = Balances {
             tokens: [
-                TokenAmount::zero(pool, crate::Token::Zero),
-                TokenAmount::zero(pool, crate::Token::One),
+                TokenAmount::zero(pool, crate::TokenIdx::Zero),
+                TokenAmount::zero(pool, crate::TokenIdx::One),
             ],
         };
 
@@ -211,8 +211,8 @@ impl PositionsReturn {
         };
 
         Balances::new(
-            TokenAmount::from_scaled(pool, crate::Token::Zero, token0_amount),
-            TokenAmount::from_scaled(pool, crate::Token::One, token1_amount),
+            TokenAmount::from_scaled(pool, crate::TokenIdx::Zero, token0_amount),
+            TokenAmount::from_scaled(pool, crate::TokenIdx::One, token1_amount),
         )
     }
 }

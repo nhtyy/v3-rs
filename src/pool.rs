@@ -6,8 +6,8 @@ use std::error::Error;
 use crate::error::V3PoolError;
 use crate::math::{Price, SqrtPrice, Tick};
 
-use crate::types::price::PoolPrice;
-use crate::{FeeTier, TickSpacing, Token};
+use crate::PoolPrice;
+use crate::{FeeTier, TickSpacing, TokenIdx};
 use alloy::primitives::Address;
 use lazy_static::lazy_static;
 use rug::Float;
@@ -58,34 +58,36 @@ pub trait V3Pool: Send + Sync + Sized {
     ) -> PoolResult<Vec<i128>, Self::BackendError>;
 
     /// Returns the position of the token in the pool
-    fn position_of(&self, token: &Address) -> Option<Token> {
+    fn position_of(&self, token: &Address) -> Option<TokenIdx> {
         if token == self.token0() {
-            Some(Token::Zero)
+            Some(TokenIdx::Zero)
         } else if token == self.token1() {
-            Some(Token::One)
+            Some(TokenIdx::One)
         } else {
             None
         }
     }
 
+    /// Returns the tick spacing of the pool
     fn tick_spacing(&self) -> TickSpacing {
         self.fee().as_spacing()
     }
 
+    /// The price of the pool (with decimals)
     async fn price(&self) -> PoolResult<Price, Self::BackendError> {
         Ok(self.sqrt_price().await?.into())
     }
 
-    /// The sqrt price of the pool
+    /// The sqrt price of the pool (with decimals)
     async fn sqrt_price(&self) -> PoolResult<SqrtPrice, Self::BackendError> {
         // saftey: sqrt price comes from pool
         Ok(unsafe { SqrtPrice::new_unchecked(self.sqrt_price_x96().await? / &*X96) })
     }
 
-    /// Returns the current pool price in terms of the numeraire
+    /// Returns the current [crate::PoolPrice] in terms of the numeraire
     async fn pool_price(
         &self,
-        numeraire: Token,
+        numeraire: TokenIdx,
     ) -> PoolResult<PoolPrice<'_, Self>, Self::BackendError> {
         Ok(PoolPrice::from_price(self, self.price().await?, numeraire))
     }
