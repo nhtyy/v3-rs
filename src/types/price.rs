@@ -11,11 +11,11 @@ use alloy::primitives::U256;
 /// and there are helpers for converting between human readable prices and scaled prices
 ///
 /// ## Comparions
-/// A pool price should be [Self::normalized] to remove the decimals and this will be the human readable price
+/// A pool price should be [Self::human_readble] to remove the decimals and this will be the human readable price
 ///
 /// ## Conversions
 /// - all Into<T> implementations will return the scaled price accounting for the internal decimals of the pool
-///     - if you want the human readable price use [PoolPrice::normalized]
+///     - if you want the human readable price use [PoolPrice::human_readble]
 pub struct PoolPrice<'a, P> {
     /// The token you want the price to be formatted as
     numeraire: Token,

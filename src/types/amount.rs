@@ -11,14 +11,14 @@ use crate::traits::ApplyBps;
 use crate::traits::{ConversionError, IntoFloat, IntoU256};
 use crate::V3Pool;
 
-/// A token amount that belongs to a pool
+/// A token amount that belongs to a pool, with helpful display and conversion impls
 ///
 /// There are helpers for converting between human readable amounts and scaled amounts
 /// and display and debug implementations return the human readable amount
 ///
 /// # Scaling Assumption
 /// - PartialOrd & PartialEq with Self, [Float] and [U256] assuming theyre scaled
-/// - Into<T> returns the scaled amounts
+/// - `Into<T>` returns the scaled amounts
 /// - Add with [U256] and [rug::Float] are assumed to be scaled
 ///
 /// - PartialOrd & PartialEq with native types will scale the the values (u8, u16, u32, f16, f32)

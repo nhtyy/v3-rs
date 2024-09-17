@@ -25,6 +25,9 @@ alloy::sol! {
     }
 }
 
+/// The alloy implementation of an on chain v3 factory.
+/// 
+/// This is useful for getting pool instances from the underlying tokens
 pub struct Factory<T, P, N> {
     instance: FactoryInterfaceInstance<T, P, N>,
 }

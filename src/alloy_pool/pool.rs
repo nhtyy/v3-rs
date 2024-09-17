@@ -96,6 +96,9 @@ alloy::sol! {
     }
 }
 
+/// The alloy implementation of an on chain v3 pool.
+/// 
+/// See the [crate::V3Pool] trait for more information
 pub struct Pool<T, P, N> {
     pool: V3PoolContractInstance<T, P, N>,
     tick_spacing: TickSpacing,
@@ -164,11 +167,11 @@ where
     /// Returns all the NFT liquidty positions for this manager
     /// 
     /// Manager: The nft position manager contract to query
-    pub async fn lp_balance_with_manager<'a, P2>(
-        &'a self,
+    pub async fn lp_balance_with_manager<P2>(
+        &self,
         manager: &AlloyManager<T, P2, N>,
         who: Address,
-    ) -> Result<Balances<'a, Self>, V3PoolError<alloy::contract::Error>>
+    ) -> Result<Balances<Self>, V3PoolError<alloy::contract::Error>>
     where
         P2: Provider<T, N>,
     {

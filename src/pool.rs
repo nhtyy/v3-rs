@@ -18,11 +18,7 @@ lazy_static! {
     pub static ref X96: Float = Float::with_val(100, 2u128.pow(96));
 }
 
-/// [V3Pool] is the main trait that all v3 pools should implement
-/// it provides a set of functions that can be used to calculate the price of the pool
-/// as well as the amount of token0 and token1 needed to move the pool price to a target price
-///
-/// it also provides some low level price functionality, that is built upon by other traits such as [crate::numeraire::Numeraire]
+/// [V3Pool] is the main trait of this library. It encompasses all the low level functions of a uniswapv3 pool
 #[async_trait::async_trait]
 pub trait V3Pool: Send + Sync + Sized {
     type BackendError: Error + Send + Sync;

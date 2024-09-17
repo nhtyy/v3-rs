@@ -1,13 +1,4 @@
-//! V3-rs is a Rust library for interacting with Uniswap V3 Pools.
-//! 
-//! V3-rs currently has functionality for:
-//! computing the optimal swap amount for a given price/pool 
-//! 
-//! and 
-//! 
-//! computing the LP balances owned by a given address (NFT positions only)
-//! 
-//! We also expose some useful [crate::types] that can help you seemlsly interact with on chain pools without having to think about token decimals.
+#![doc = include_str!("../README.md")]
 
 #[macro_use]
 mod macros;
@@ -19,12 +10,15 @@ pub mod constants;
 
 /// The Alloy Implementation of the [crate::V3Pool] trait
 pub mod alloy_pool;
+#[doc(inline)]
 pub use alloy_pool::{factory::Factory as AlloyFactory, pool::Pool as AlloyPool};
 
 pub mod pool;
+#[doc(inline)]
 pub use pool::{price::PriceExt, PoolResult, V3Pool};
 
 mod position;
+#[doc(inline)]
 pub use position::{Manager as AlloyManager, PositionsReturn};
 
 /// The error type that is returned from interacting with a [crate::V3Pool]
@@ -35,6 +29,7 @@ pub mod math;
 
 /// Some useful types that are used in the library
 pub mod types;
+#[doc(inline)]
 pub use types::{TokenAmount, PoolPrice, FeeTier, TickSpacing, Token as TokenIdx};
 
 mod utils {
