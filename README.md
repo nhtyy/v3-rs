@@ -2,7 +2,7 @@
 
 ### Motivation
 
-v3-rs is a Rust library for interacting with Uniswap v3 Pools.
+v3-rs is a Rust library for analysing Uniswap v3 Pools.
 
 v3-rs currently has high level functionality for:
 - computing the optimal swap amount for a given price/pool 
