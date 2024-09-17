@@ -142,7 +142,7 @@ where
             aggregate.call_consume().await
         }
 
-        match all_positions_multicall(&self, balance._0, owner).await {
+        match all_positions_multicall(self, balance._0, owner).await {
             Ok(positions) => Ok(positions),
             Err(MultiCallError::ContractError(e)) => Err(e),
             Err(MultiCallError::ChainNotSupported) => {

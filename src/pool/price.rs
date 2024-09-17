@@ -86,8 +86,8 @@ pub trait PriceExt: V3Pool {
 
         // todo we could make this faster with swapping and avoiding clones
         tracing::trace!("starting tick loop");
-        let mut ticks = ticks.into_iter();
-        while let Some(delta) = ticks.next() {
+        let ticks = ticks.into_iter();
+        for delta in ticks {
             current_liquidity += delta;
             if up {
                 next_tick = next_tick.up(self.tick_spacing());

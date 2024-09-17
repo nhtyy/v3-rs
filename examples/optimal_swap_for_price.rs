@@ -13,7 +13,7 @@ async fn main() {
 
     let factory = AlloyFactory::new(MAINNET.factory, &provider);
 
-    let pool = factory.pool(WETH, DAI, FeeTier::Mid.into()).await.unwrap();
+    let pool = factory.pool(WETH, DAI, FeeTier::Mid).await.unwrap();
 
     let numeraire_idx = pool.position_of(&DAI).expect("Token should be in the pool");
 
@@ -31,4 +31,5 @@ async fn main() {
         .unwrap();
 
     println!("Optimal Swap: {:?}", optimal);
+    println!("fee needed: {}", optimal.fee_amount())
 }

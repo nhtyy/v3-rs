@@ -137,10 +137,10 @@ where
     /// 
     /// # Errors
     /// - If the chain constants are not supported (see [crate::constants::NETWORKS] & [Self::lp_balance_with_manager])
-    pub async fn lp_balance<'a>(
-        &'a self,
+    pub async fn lp_balance(
+        &self,
         who: Address,
-    ) -> Result<Balances<'a, Self>, V3PoolError<alloy::contract::Error>> {
+    ) -> Result<Balances<Self>, V3PoolError<alloy::contract::Error>> {
         let chain_id = self
             .pool
             .provider()
@@ -213,7 +213,7 @@ where
         tracing::trace!("difference: {}, capacity: {}", differnce, capactiy);
 
         if differnce % spacing != 0 {
-            let tick_spacing = self.tick_spacing.clone();
+            let tick_spacing = self.tick_spacing;
 
             return Err(V3PoolError::BadTickRange(starting, ending, tick_spacing));
         }

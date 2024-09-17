@@ -12,7 +12,7 @@ async fn main() {
 
     let factory = AlloyFactory::new(MAINNET.factory, &provider);
 
-    let pool = factory.pool(TOKEN_A, TOKEN_B, FeeTier::Mid.into()).await.unwrap();
+    let pool = factory.pool(TOKEN_A, TOKEN_B, FeeTier::Mid).await.unwrap();
 
     let balance = pool.lp_balance(LP).await.unwrap();
 
