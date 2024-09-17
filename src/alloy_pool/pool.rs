@@ -3,7 +3,7 @@ use crate::math::Tick;
 use crate::position::Balances;
 use crate::traits::IntoFloat;
 // use crate::pool::{FeeTier, Tick, TickSpacing, V3Pool, V3PoolError};
-use crate::{FeeTier, Manager, PoolResult, TickSpacing, V3Pool};
+use crate::{FeeTier, AlloyManager, PoolResult, TickSpacing, V3Pool};
 use alloy::contract::MultiCall;
 use alloy::network::Network;
 use alloy::primitives::Address;
@@ -150,7 +150,7 @@ where
             .map_err(alloy::contract::Error::from)
             .map_err(V3PoolError::backend_error)?;
 
-        let manager = Manager::new(
+        let manager = AlloyManager::new(
             crate::constants::NETWORKS
                 .get(&chain_id)
                 .ok_or(V3PoolError::UnsupportedChain)?
@@ -166,7 +166,7 @@ where
     /// Manager: The nft position manager contract to query
     pub async fn lp_balance_with_manager<'a, P2>(
         &'a self,
-        manager: &Manager<T, P2, N>,
+        manager: &AlloyManager<T, P2, N>,
         who: Address,
     ) -> Result<Balances<'a, Self>, V3PoolError<alloy::contract::Error>>
     where

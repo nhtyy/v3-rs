@@ -15,7 +15,7 @@ pub enum Token {
     One,
 }
 
-// todo specailed fee tier?
+/// The fee tier for the pool
 #[derive(Debug, Clone, Copy)]
 pub enum FeeTier {
     /// Added after by governance = 1 bps

@@ -25,7 +25,7 @@ pub mod pool;
 pub use pool::{price::PriceExt, PoolResult, V3Pool};
 
 mod position;
-pub use position::{Manager, PositionsReturn};
+pub use position::{Manager as AlloyManager, PositionsReturn};
 
 /// The error type that is returned from interacting with a [crate::V3Pool]
 pub mod error;
