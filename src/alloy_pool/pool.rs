@@ -8,7 +8,7 @@ use alloy::contract::MultiCall;
 use alloy::network::Network;
 use alloy::primitives::Address;
 use alloy::providers::Provider;
-use alloy::transports::Transport;
+use alloy::transports::{Transport, TransportError};
 
 use rug::Float;
 use V3PoolContract::V3PoolContractInstance;
@@ -133,12 +133,45 @@ where
         })
     }
 
-    /// Returns all the NFT liquidty positions for this manager
+    /// Get the (NFT) LP balance owned by the address
+    /// 
+    /// # Errors
+    /// - If the chain constants are not supported (see [crate::constants::NETWORKS] & [Self::lp_balance_with_manager])
     pub async fn lp_balance<'a>(
         &'a self,
-        manager: &Manager<T, P, N>,
         who: Address,
     ) -> Result<Balances<'a, Self>, V3PoolError<alloy::contract::Error>> {
+        let chain_id = self
+            .pool
+            .provider()
+            .get_chain_id()
+            .await
+            .map_err(TransportError::from)
+            .map_err(alloy::contract::Error::from)
+            .map_err(V3PoolError::backend_error)?;
+
+        let manager = Manager::new(
+            crate::constants::NETWORKS
+                .get(&chain_id)
+                .ok_or(V3PoolError::UnsupportedChain)?
+                .manager,
+            self.pool.provider(),
+        );
+
+        manager.total_positions_balance(self, who).await
+    }
+
+    /// Returns all the NFT liquidty positions for this manager
+    /// 
+    /// Manager: The nft position manager contract to query
+    pub async fn lp_balance_with_manager<'a, P2>(
+        &'a self,
+        manager: &Manager<T, P2, N>,
+        who: Address,
+    ) -> Result<Balances<'a, Self>, V3PoolError<alloy::contract::Error>>
+    where
+        P2: Provider<T, N>,
+    {
         manager.total_positions_balance(self, who).await
     }
 }

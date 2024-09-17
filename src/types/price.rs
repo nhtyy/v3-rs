@@ -134,7 +134,8 @@ impl<'a, P: V3Pool> std::fmt::Display for PoolPrice<'a, P> {
 impl<'a, P: V3Pool> std::fmt::Debug for PoolPrice<'a, P> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("PoolPrice")
-            .field("price_normalized", &self.human_readable())
+            .field("raw", &self.price)
+            .field("human_readable", &self.human_readable())
             .field("token0", &self.pool.token0())
             .field("token1", &self.pool.token1())
             .field("token0_decimals", &self.pool.token0_decimals())

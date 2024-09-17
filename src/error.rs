@@ -23,6 +23,8 @@ pub enum V3PoolError<E: Error> {
     TooManyTicks,
     #[error("Multicall error: {0}")]
     MulticallError(#[from] MultiCallError),
+    #[error("Unsupported Chain")]
+    UnsupportedChain,
 }
 
 impl<E: Error> V3PoolError<E> {

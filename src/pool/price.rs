@@ -36,16 +36,16 @@ pub trait PriceExt: V3Pool {
 
         let mut deltas = Deltas::new(self);
         let mut next_tick: Tick;
-        let up: bool;
+        let up = starting_lower_tick < target_lower_tick;
+        let neq = starting_lower_tick != target_lower_tick;
 
         // if were in the same tick we want to just move to the price and exit from there
         // if were going up lets move to the boundry, include that boundry and then move into the loop
         // if were going down lets move to the boundry, include that boundry and then move into the loop
-        let ticks: Vec<i128> = if starting_lower_tick < target_lower_tick {
+        let ticks = if up {
             tracing::debug!("current lower tick is less than target lower tick");
             tracing::debug!("were moving the price up");
             next_tick = starting_lower_tick.up(self.tick_spacing());
-            up = true;
 
             // move the price to the next tick
             deltas.update(
@@ -57,11 +57,10 @@ pub trait PriceExt: V3Pool {
             // get the tick range from the current tick to the target tick
             self.tick_range(next_tick, target_lower_tick.up(self.tick_spacing()))
                 .await?
-        } else if starting_lower_tick > target_lower_tick {
+        } else if neq {
             tracing::debug!("current lower tick is greater than target lower tick");
             tracing::debug!("were moving the price down");
             next_tick = starting_lower_tick;
-            up = false;
 
             // move the price to the next tick
             deltas.update(
@@ -77,9 +76,9 @@ pub trait PriceExt: V3Pool {
             tracing::debug!("current lower tick is equal to target lower tick");
 
             deltas.update(
-                current_liquidity.clone(),
+                current_liquidity,
                 current_sqrt_price,
-                target_sqrt_price.clone(),
+                target_sqrt_price,
             );
 
             return Ok(deltas);

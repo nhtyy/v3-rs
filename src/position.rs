@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use crate::{
     error::V3PoolError,
     math::{SqrtPrice, Tick},
@@ -59,11 +61,24 @@ alloy::sol! {
     }
 }
 
-pub use PositionManager::{positionsReturn as PositionsReturn, PositionManagerInstance as Manager};
+pub use PositionManager::positionsReturn as PositionsReturn;
 
-#[derive(Debug, Clone)]
+pub struct Manager<T, P, N> {
+    instance: PositionManager::PositionManagerInstance<T, P, N>,
+}
+
+#[derive(Clone)]
 pub struct Balances<'a, P: V3Pool> {
     tokens: [TokenAmount<'a, P>; 2],
+}
+
+impl<'a, P: V3Pool> Debug for Balances<'a, P> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Balances")
+            .field("token0", &self.tokens[0])
+            .field("token1", &self.tokens[1])
+            .finish()
+    }
 }
 
 impl<'a, P: V3Pool> Balances<'a, P> {
@@ -88,11 +103,17 @@ where
     P: Provider<T, N>,
     N: Network,
 {
+    pub const fn new(address: Address, provider: P) -> Self {
+        Self {
+            instance: PositionManager::PositionManagerInstance::new(address, provider),
+        }
+    }
+
     pub async fn all_positions(
         &self,
         owner: Address,
     ) -> Result<Vec<PositionsReturn>, alloy::contract::Error> {
-        let balance = self.balanceOf(owner).call().await?;
+        let balance = self.instance.balanceOf(owner).call().await?;
 
         // todo branch if not multicall chain?
         async fn all_positions_multicall<T, P, N>(
@@ -105,19 +126,20 @@ where
             P: Provider<T, N>,
             N: Network,
         {
-            let mut aggregate = MultiCall::new_checked(this.provider()).await.map(|m| m.aggregate())?;
+            let multicall = MultiCall::new_checked(this.instance.provider()).await?;
+            let mut aggregate = multicall.aggregate();
 
             let mut i = U256::ZERO;
             while i < balance {
-                aggregate.add_call(this.tokenOfOwnerByIndex(owner, i));
+                aggregate.add_call(this.instance.tokenOfOwnerByIndex(owner, i));
                 i += U256::from(1u8);
             }
 
-            let ids = aggregate.call().await?;
-            let mut aggregate = MultiCall::new_checked(this.provider()).await.map(|m| m.aggregate())?;
-            aggregate.extend(ids.into_iter().map(|id| this.positions(id._0)));
+            let ids = aggregate.call_consume().await?;
+            let mut aggregate = multicall.aggregate();
+            aggregate.extend(ids.into_iter().map(|id| this.instance.positions(id._0)));
 
-            aggregate.call().await
+            aggregate.call_consume().await
         }
 
         match all_positions_multicall(&self, balance._0, owner).await {

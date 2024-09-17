@@ -69,7 +69,7 @@ impl<'a, P: V3Pool> TokenAmount<'a, P> {
     }
 
     #[inline]
-    pub fn normalized_amount(&self) -> Float {
+    pub fn human_readable(&self) -> Float {
         Self::scale_down(self.pool, self.token, self.amount.clone())
     }
 
@@ -298,20 +298,22 @@ impl<'a, P: V3Pool> std::fmt::Display for TokenAmount<'a, P> {
         write!(
             f,
             "{}",
-            Self::scale_down(self.pool, self.token, self.amount.clone())
+            self.human_readable()
         )
     }
 }
 
 impl<'a, P: V3Pool> std::fmt::Debug for TokenAmount<'a, P> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let token = match self.token {
+            TokenIdx::Zero => self.pool.token0(),
+            TokenIdx::One => self.pool.token1(),
+        };
+
         f.debug_struct("TokenAmount")
-            .field("normalized_amount", &self.normalized_amount())
-            .field("token", &self.token)
-            .field("token0", &self.pool.token0())
-            .field("token1", &self.pool.token1())
-            .field("token0_decimals", &self.pool.token0_decimals())
-            .field("token1_decimals", &self.pool.token1_decimals())
+            .field("raw", self.as_float())
+            .field("human_readable", &self.human_readable())
+            .field("token", token)
             .finish()
     }
 }

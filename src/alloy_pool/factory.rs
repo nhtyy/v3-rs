@@ -5,6 +5,7 @@ use alloy::network::Network;
 use alloy::primitives::Address;
 use alloy::providers::Provider;
 use alloy::transports::Transport;
+use FactoryInterface::FactoryInterfaceInstance;
 
 alloy::sol! {
     #[derive(Debug)]
@@ -24,7 +25,9 @@ alloy::sol! {
     }
 }
 
-pub use FactoryInterface::FactoryInterfaceInstance as Factory;
+pub struct Factory<T, P, N> {
+    instance: FactoryInterfaceInstance<T, P, N>,
+}
 
 impl<T, P, N> Factory<T, P, N>
 where
@@ -32,13 +35,17 @@ where
     P: Provider<T, N>,
     N: Network,
 {
+    pub const fn new(address: Address, provider: P) -> Self {
+        Self { instance: FactoryInterfaceInstance::new(address, provider) }
+    }
+
     pub async fn pool_address(
         &self,
         first_token: Address,
         second_token: Address,
         fee: FeeTier,
     ) -> Result<Address, alloy::contract::Error> {
-        self.getPool(first_token, second_token, fee.as_scaled_bp())
+        self.instance.getPool(first_token, second_token, fee.as_scaled_bp())
             .call()
             .await
             .map(|x| x.pool)
@@ -54,7 +61,7 @@ where
         second_token: Address,
         fee: FeeTier,
     ) -> Result<Pool<T, &P, N>, V3PoolError<alloy::contract::Error>> {
-        self.pool_with_provider(first_token, second_token, fee, self.provider())
+        self.pool_with_provider(first_token, second_token, fee, self.instance.provider())
             .await
     }
 
