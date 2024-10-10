@@ -5,8 +5,6 @@ use std::error::Error;
 use crate::math::BoundsError;
 use crate::TickSpacing;
 
-use alloy::contract::MultiCallError;
-
 #[derive(Debug, thiserror::Error)]
 pub enum V3PoolError<E: Error> {
     #[error("Error parsing float: {0}")]
@@ -21,8 +19,6 @@ pub enum V3PoolError<E: Error> {
     BadTickRange(Tick, Tick, TickSpacing),
     #[error("Too many ticks")]
     TooManyTicks,
-    #[error("Multicall error: {0}")]
-    MulticallError(#[from] MultiCallError),
     #[error("Unsupported Chain")]
     UnsupportedChain,
 }

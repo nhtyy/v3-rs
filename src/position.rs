@@ -3,12 +3,12 @@ use std::fmt::Debug;
 use crate::{
     error::V3PoolError,
     math::{SqrtPrice, Tick},
+    traits::Batch,
     TokenAmount,
 };
 use alloy::{
-    contract::{MultiCall, MultiCallError},
     network::Network,
-    primitives::{Address, U256},
+    primitives::{uint, Address, U256},
     providers::Provider,
     transports::Transport,
 };
@@ -86,58 +86,43 @@ impl<'a, P: V3Pool> Balances<'a, P> {
 impl<T, P, N> Manager<T, P, N>
 where
     T: Transport + Clone,
-    P: Provider<T, N>,
+    P: Provider<T, N> + Clone,
     N: Network,
 {
-    pub const fn new(address: Address, provider: P) -> Self {
+    pub fn new(address: Address, provider: P) -> Self {
         Self {
             instance: PositionManager::PositionManagerInstance::new(address, provider),
         }
     }
+}
 
+impl<T, P, N> Manager<T, P, N>
+where
+    T: Transport + Clone,
+    P: Provider<T, N>,
+    N: Network,
+{
     pub async fn all_positions(
         &self,
         owner: Address,
     ) -> Result<Vec<PositionsReturn>, alloy::contract::Error> {
-        let balance = self.instance.balanceOf(owner).call().await?;
+        let balance = self.instance.balanceOf(owner).call().await?._0;
 
-        // todo branch if not multicall chain?
-        async fn all_positions_multicall<T, P, N>(
-            this: &Manager<T, P, N>,
-            balance: U256,
-            owner: Address,
-        ) -> Result<Vec<PositionsReturn>, alloy::contract::MultiCallError>
-        where
-            T: Transport + Clone,
-            P: Provider<T, N>,
-            N: Network,
-        {
-            let multicall = MultiCall::new_checked(this.instance.provider()).await?;
-            let mut aggregate = multicall.aggregate();
-
-            let mut i = U256::ZERO;
-            while i < balance {
-                aggregate.add_call(this.instance.tokenOfOwnerByIndex(owner, i));
-                i += U256::from(1u8);
-            }
-
-            let ids = aggregate.call_consume().await?;
-            let mut aggregate = multicall.aggregate();
-            aggregate.extend(ids.into_iter().map(|id| this.instance.positions(id._0)));
-
-            aggregate.call_consume().await
+        let mut calls = Vec::with_capacity(balance.saturating_to());
+        let mut i = U256::ZERO;
+        while i < balance {
+            calls.push(self.instance.tokenOfOwnerByIndex(owner, i));
+            i += uint!(1_U256);
         }
 
-        match all_positions_multicall(self, balance._0, owner).await {
-            Ok(positions) => Ok(positions),
-            Err(MultiCallError::ContractError(e)) => Err(e),
-            Err(MultiCallError::ChainNotSupported) => {
-                panic!("Tried to get all positions on a chain that doesnt have multicall")
-            }
-            Err(MultiCallError::MissingTargetAddress) => {
-                unreachable!("All calls should have a target address, this is a bug")
-            }
-        }
+        let ids = calls.batch().call().await?;
+        Ok(ids
+            .into_iter()
+            .map(|id| self.instance.positions(id._0))
+            .collect::<Vec<_>>()
+            .batch()
+            .call()
+            .await?)
     }
 
     pub async fn total_positions_balance<'p, Pool>(

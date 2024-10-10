@@ -1,10 +1,9 @@
 use crate::error::V3PoolError;
 use crate::math::Tick;
 use crate::position::Balances;
-use crate::traits::IntoFloat;
+use crate::traits::{IntoFloat, Batch};
 // use crate::pool::{FeeTier, Tick, TickSpacing, V3Pool, V3PoolError};
 use crate::{FeeTier, AlloyManager, PoolResult, TickSpacing, V3Pool};
-use alloy::contract::MultiCall;
 use alloy::network::Network;
 use alloy::primitives::Address;
 use alloy::providers::Provider;
@@ -229,14 +228,11 @@ where
             return Ok(vec![]);
         }
 
-        let multicall = MultiCall::new_checked(self.pool.provider()).await?;
-        let mut aggregate = multicall.aggregate();
-        aggregate.reserve(capactiy as usize);
-
+        let mut calls = Vec::new();
         let mut current = starting;
         // we know this should happen because we check that the diff is a multiple of the spacing
         while current != ending {
-            aggregate.add_call(self.pool.ticks(current.into()));
+            calls.push(self.pool.ticks(current.into()));
 
             if down {
                 current = current.down(self.tick_spacing);
@@ -245,9 +241,11 @@ where
             }
         }
 
-        Ok(aggregate
+        Ok(calls
+            .batch()
             .call()
-            .await?
+            .await
+            .map_err(V3PoolError::backend_error)?
             .into_iter()
             .map(|x| {
                 if down {
