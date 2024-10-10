@@ -17,7 +17,7 @@ tracing = "0.1.40"
 serde = {version = "1.0.193", features = ["derive"]}
 anyhow = "1.0.75"
 thiserror = "1.0.61"
-alloy = { version = "0.3.0", features = ["full"] }
+alloy = { version = "0.4.0", features = ["full"] }
 phf = { version = "0.11.2", features = ["macros"] }
 
 [[example]]
@@ -32,5 +32,6 @@ path = "examples/get_pool_price.rs"
 name = "optimal_swap_for_price"
 path = "examples/optimal_swap_for_price.rs"
 
-[patch.crates-io]
-alloy = { git = "https://github.com/nhtyy/alloy", branch = "n/multicall" }
+[features]
+default = ["trace_callMany"]
+trace_callMany = ["alloy/rpc-types-trace"]
