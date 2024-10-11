@@ -35,6 +35,9 @@ where
     T: Transport + Clone,
     N: Network,
 {
+    /// Note: https://github.com/rust-lang/rust/issues/110338
+    /// 
+    /// You may need to collect your iterator before calling this function
     pub async fn call(self) -> Result<Vec<SC::Return>, alloy::contract::Error> {
         let mut iter = self.calls.into_iter();
 
