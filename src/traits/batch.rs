@@ -6,6 +6,7 @@ use alloy::sol_types::SolCall;
 use alloy::transports::Transport;
 
 pub trait Batch: Sized {
+    /// Batch a collection of calls using one of the available batching strategies.
     fn batch(self) -> BatchCall<Self>;
 }
 
@@ -51,7 +52,11 @@ where
             {
                 let chain_id = provider.get_chain_id().await?;
 
-                if !crate::constants::NETWORKS.get(&chain_id).map(|c| c.supports_multicall).unwrap_or(false) {
+                if !crate::constants::NETWORKS
+                    .get(&chain_id)
+                    .map(|c| c.supports_multicall)
+                    .unwrap_or(false)
+                {
                     tracing::error!("Chain does not support multicall, this call will fail");
                 }
             }
@@ -60,7 +65,7 @@ where
                 .chain(iter.map(|c| c.into_transaction_request()))
                 .map(|call| Call {
                     target: call.to().unwrap_or_default(),
-                    callData: call.input().cloned().unwrap_or_default(), 
+                    callData: call.input().cloned().unwrap_or_default(),
                 })
                 .collect::<Vec<_>>();
 
@@ -68,7 +73,10 @@ where
 
             let data = multicall.aggregate(calls).call().await?.returnData;
 
-            return data.into_iter().map(|d| SC::abi_decode_returns(&d, true).map_err(alloy::contract::Error::from)).collect();
+            return data
+                .into_iter()
+                .map(|d| SC::abi_decode_returns(&d, true).map_err(alloy::contract::Error::from))
+                .collect();
         }
 
         #[cfg(feature = "trace_callMany")]
@@ -123,6 +131,38 @@ where
         //         })
         //         .collect();
         // }
+    }
+
+    pub fn map<F, R>(self, f: F) -> MapCall<I, F>
+    where
+        F: Fn(SC::Return) -> R,
+    {
+        MapCall { batch: self, f }
+    }
+}
+
+pub struct MapCall<I, F> {
+    batch: BatchCall<I>,
+    f: F,
+}
+
+impl<'a, T, P, N, SC, I, F, R> MapCall<I, F>
+where
+    P: Provider<T, N> + 'a,
+    SC: SolCall,
+    T: Transport + Clone,
+    N: Network,
+    I: IntoIterator<Item = SolCallBuilder<T, &'a P, SC, N>>,
+    F: Fn(SC::Return) -> R,
+{
+    pub async fn call(self) -> Result<Vec<R>, alloy::contract::Error> {
+        Ok(self
+            .batch
+            .call()
+            .await?
+            .into_iter()
+            .map(|r| (self.f)(r))
+            .collect())
     }
 }
 
