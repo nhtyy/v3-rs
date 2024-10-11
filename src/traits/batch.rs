@@ -135,7 +135,7 @@ where
 
     pub fn map<F, R>(self, f: F) -> MapCall<I, F>
     where
-        F: Fn(SC::Return) -> R,
+        F: FnMut(SC::Return) -> R,
     {
         MapCall { batch: self, f }
     }
@@ -153,9 +153,9 @@ where
     T: Transport + Clone,
     N: Network,
     I: IntoIterator<Item = SolCallBuilder<T, &'a P, SC, N>>,
-    F: Fn(SC::Return) -> R,
+    F: FnMut(SC::Return) -> R,
 {
-    pub async fn call(self) -> Result<Vec<R>, alloy::contract::Error> {
+    pub async fn call(mut self) -> Result<Vec<R>, alloy::contract::Error> {
         Ok(self
             .batch
             .call()
