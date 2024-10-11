@@ -1,4 +1,4 @@
-use alloy::contract::SolCallBuilder;
+use alloy::contract::{CallBuilder, SolCallBuilder};
 use alloy::network::{Network, TransactionBuilder};
 use alloy::providers::Provider;
 use alloy::sol;
@@ -10,10 +10,10 @@ pub trait Batch: Sized {
     fn batch(self) -> BatchCall<Self>;
 }
 
-impl<'a, T, P, N, SC, I> Batch for I
+impl<T, P, N, SC, I> Batch for I
 where
-    P: Provider<T, N> + 'a,
-    I: IntoIterator<Item = SolCallBuilder<T, &'a P, SC, N>>,
+    P: Provider<T, N>,
+    I: IntoIterator<Item = SolCallBuilder<T, P, SC, N>>,
     SC: SolCall,
     T: Transport + Clone,
     N: Network,
@@ -27,10 +27,10 @@ pub struct BatchCall<I> {
     calls: I,
 }
 
-impl<'a, T, P, N, SC, I> BatchCall<I>
+impl<T, P, N, SC, I> BatchCall<I>
 where
-    P: Provider<T, N> + 'a,
-    I: IntoIterator<Item = SolCallBuilder<T, &'a P, SC, N>>,
+    P: Provider<T, N>,
+    I: IntoIterator<Item = SolCallBuilder<T, P, SC, N>>,
     SC: SolCall,
     T: Transport + Clone,
     N: Network,
@@ -42,7 +42,13 @@ where
             return Ok(vec![]);
         };
 
-        let (provider, call) = (call.provider, call.into_transaction_request());
+        // todo: Clone because upstream stops us from taking both the provideer and the tx_req
+        let tx_req = call.as_ref().clone();
+
+        let CallBuilder {
+            provider,
+            ..
+        } = call;
 
         #[cfg(not(any(feature = "trace_callMany", feature = "eth_callMany")))]
         {
@@ -61,7 +67,7 @@ where
                 }
             }
 
-            let calls = std::iter::once(call)
+            let calls = std::iter::once(tx_req)
                 .chain(iter.map(|c| c.into_transaction_request()))
                 .map(|call| Call {
                     target: call.to().unwrap_or_default(),
@@ -87,7 +93,7 @@ where
             let tt = vec![TraceType::Trace];
             return provider
                 .trace_call_many(
-                    std::iter::once(call)
+                    std::iter::once(tx_req)
                         .chain(iter.map(|call| call.into_transaction_request()))
                         .map(|call| (call, tt.as_slice()))
                         .collect::<Vec<_>>()
@@ -146,13 +152,13 @@ pub struct MapCall<I, F> {
     f: F,
 }
 
-impl<'a, T, P, N, SC, I, F, R> MapCall<I, F>
+impl<T, P, N, SC, I, F, R> MapCall<I, F>
 where
-    P: Provider<T, N> + 'a,
+    P: Provider<T, N>,
     SC: SolCall,
     T: Transport + Clone,
     N: Network,
-    I: IntoIterator<Item = SolCallBuilder<T, &'a P, SC, N>>,
+    I: IntoIterator<Item = SolCallBuilder<T, P, SC, N>>,
     F: FnMut(SC::Return) -> R,
 {
     pub async fn call(mut self) -> Result<Vec<R>, alloy::contract::Error> {
