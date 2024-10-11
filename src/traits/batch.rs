@@ -1,6 +1,7 @@
 use alloy::contract::SolCallBuilder;
-use alloy::network::Network;
+use alloy::network::{Network, TransactionBuilder};
 use alloy::providers::Provider;
+use alloy::sol;
 use alloy::sol_types::SolCall;
 use alloy::transports::Transport;
 
@@ -31,7 +32,7 @@ where
     I: IntoIterator<Item = SolCallBuilder<T, &'a P, SC, N>>,
     SC: SolCall,
     T: Transport + Clone,
-    N: Network
+    N: Network,
 {
     pub async fn call(self) -> Result<Vec<SC::Return>, alloy::contract::Error> {
         let mut iter = self.calls.into_iter();
@@ -41,6 +42,34 @@ where
         };
 
         let (provider, call) = (call.provider, call.into_transaction_request());
+
+        #[cfg(not(any(feature = "trace_callMany", feature = "eth_callMany")))]
+        {
+            use Multicall::{Call, MulticallInstance};
+
+            #[cfg(debug_assertions)]
+            {
+                let chain_id = provider.get_chain_id().await?;
+
+                if !crate::constants::NETWORKS.get(&chain_id).map(|c| c.supports_multicall).unwrap_or(false) {
+                    tracing::error!("Chain does not support multicall, this call will fail");
+                }
+            }
+
+            let calls = std::iter::once(call)
+                .chain(iter.map(|c| c.into_transaction_request()))
+                .map(|call| Call {
+                    target: call.to().unwrap_or_default(),
+                    callData: call.input().cloned().unwrap_or_default(), 
+                })
+                .collect::<Vec<_>>();
+
+            let multicall = MulticallInstance::new(crate::constants::MULTICALL3, provider);
+
+            let data = multicall.aggregate(calls).call().await?.returnData;
+
+            return data.into_iter().map(|d| SC::abi_decode_returns(&d, true).map_err(alloy::contract::Error::from)).collect();
+        }
 
         #[cfg(feature = "trace_callMany")]
         {
@@ -59,17 +88,24 @@ where
                 .await
                 .map_err(alloy::contract::Error::from)?
                 .into_iter()
-                .map(|r| SC::abi_decode_returns(&r.output, true).map_err(alloy::contract::Error::from))
+                .filter_map(|r| match SC::abi_decode_returns(&r.output, true).ok() {
+                    Some(o) => Some(Ok(o)),
+                    None => {
+                        tracing::error!("Failed to decode return value: {:?}", r.output);
+                        None
+                    }
+                })
                 .collect();
         }
 
-        // #[cfg(not(feature = "trace_callMany"))]
-        // {   
+        // todo: bundle is concrete over Eth::TxRequest
+        // #[cfg(feature = "eth_callMany")]
+        // {
         //     use alloy::rpc::types::Bundle;
         //     let bundle = Bundle {
         //         transactions: std::iter::once(call)
         //             .chain(iter.map(|call| call.into_transaction_request()))
-        //             .map(|call| call.into())    
+        //             .map(|call| call.into())
         //             .collect::<Vec<_>>(),
         //         block_override: None,
         //     };
@@ -87,5 +123,17 @@ where
         //         })
         //         .collect();
         // }
+    }
+}
+
+sol! {
+    #[sol(rpc)]
+    interface Multicall {
+        struct Call {
+            address target;
+            bytes callData;
+        }
+
+        function aggregate(Call[] memory calls) external returns (uint256 blockNumber, bytes[] returnData);
     }
 }

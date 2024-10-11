@@ -33,5 +33,9 @@ name = "optimal_swap_for_price"
 path = "examples/optimal_swap_for_price.rs"
 
 [features]
-default = ["trace_callMany"]
+default = []
 trace_callMany = ["alloy/rpc-types-trace"]
+eth_callMany = []
+
+[dev-dependencies]
+tracing-subscriber = "0.3.18"
