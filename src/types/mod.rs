@@ -82,7 +82,7 @@ impl TickSpacing {
 
 #[cfg(test)]
 mod tests {
-    use crate::{math::Tick, FeeTier, PoolResult};
+    use crate::{math::Tick, PoolResult};
     use alloy::primitives::Address;
     use rug::Float;
     use std::convert::Infallible;

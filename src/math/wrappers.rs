@@ -6,7 +6,6 @@ use rug::ops::Pow;
 use rug::Float;
 
 use crate::traits::IntoU256;
-use crate::TickSpacing;
 
 lazy_static! {
     pub static ref MAX_PRICE: Float = Float::with_val(100, 1.0001).pow(887272);
@@ -62,7 +61,7 @@ impl Tick {
 
     /// Creates a new tick from an i32 without checking if it is valid
     /// useful for when youre reading directly from the pool
-    /// 
+    ///
     /// # Safey: The tick should be in the range [-887272, 887272]
     pub unsafe fn new_unchecked(tick: i32) -> Self {
         Self(tick)
@@ -121,7 +120,7 @@ impl Price {
 
     /// Creates a new price from a float without checking if it is valid
     /// useful for when youre reading directly from the pool
-    /// 
+    ///
     /// # Safety: The price should be in the range [MIN_PRICE, MAX_PRICE]
     pub unsafe fn new_unchecked(float: Float) -> Self {
         Self(float)
@@ -144,7 +143,7 @@ impl SqrtPrice {
 
     /// Creates a new sqrt price from a float without checking if it is valid
     /// useful for when youre reading directly from the pool
-    /// 
+    ///
     /// # Safety: The sqrt price should be in the range [MIN_SQRT_PRICE, MAX_SQRT_PRICE]
     pub unsafe fn new_unchecked(float: Float) -> Self {
         Self(float)

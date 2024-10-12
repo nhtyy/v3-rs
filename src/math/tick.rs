@@ -1,8 +1,6 @@
 use rug::ops::Pow;
 use rug::Float;
 
-use crate::TickSpacing;
-
 use super::wrappers::{Price, Tick};
 
 lazy_static::lazy_static! {

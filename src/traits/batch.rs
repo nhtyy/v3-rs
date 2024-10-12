@@ -1,5 +1,5 @@
 use alloy::contract::{CallBuilder, SolCallBuilder};
-use alloy::network::{Network, TransactionBuilder};
+use alloy::network::Network;
 use alloy::providers::Provider;
 use alloy::sol;
 use alloy::sol_types::SolCall;
@@ -36,7 +36,7 @@ where
     N: Network,
 {
     /// Note: https://github.com/rust-lang/rust/issues/110338
-    /// 
+    ///
     /// You may need to collect your iterator before calling this function
     pub async fn call(self) -> Result<Vec<SC::Return>, alloy::contract::Error> {
         let mut iter = self.calls.into_iter();
@@ -48,10 +48,7 @@ where
         // todo: Clone because upstream stops us from taking both the provideer and the tx_req
         let tx_req = call.as_ref().clone();
 
-        let CallBuilder {
-            provider,
-            ..
-        } = call;
+        let CallBuilder { provider, .. } = call;
 
         #[cfg(not(any(feature = "trace_callMany", feature = "eth_callMany")))]
         {

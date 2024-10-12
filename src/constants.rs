@@ -1,4 +1,4 @@
-use alloy::primitives::{Address, address};
+use alloy::primitives::{address, Address};
 
 pub const MULTICALL3: Address = address!("cA11bde05977b3631167028862bE2a173976CA11");
 
@@ -21,7 +21,6 @@ pub const ARBITRUM: ChainConstants = ChainConstants {
     manager: address!("C36442b4a4522E871399CD717aBDD847Ab11FE88"),
     quoter_v2: address!("61fFE014bA17989E743c5F6cB21bF9697530B21e"),
     supports_multicall: true,
-
 };
 
 pub const OPTIMISM: ChainConstants = ChainConstants {

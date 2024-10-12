@@ -6,9 +6,9 @@ use alloy::primitives::U256;
 use rug::ops::Pow;
 use rug::Float;
 
-use crate::TokenIdx;
 use crate::traits::ApplyBps;
 use crate::traits::{ConversionError, IntoFloat, IntoU256};
+use crate::TokenIdx;
 use crate::V3Pool;
 
 /// A token amount that belongs to a pool, with helpful display and conversion impls
@@ -295,11 +295,7 @@ impl_token_amount_cmp_eq_native!(TokenAmount);
 
 impl<'a, P: V3Pool> std::fmt::Display for TokenAmount<'a, P> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            self.human_readable()
-        )
+        write!(f, "{}", self.human_readable())
     }
 }
 
@@ -321,7 +317,7 @@ impl<'a, P: V3Pool> std::fmt::Debug for TokenAmount<'a, P> {
 #[cfg(test)]
 mod test {
     use super::TokenAmount;
-    use crate::{FeeTier, TokenIdx};
+    use crate::TokenIdx;
     use alloy::primitives::Address;
     use alloy::primitives::U256;
     use rug::ops::Pow;

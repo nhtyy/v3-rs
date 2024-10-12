@@ -1,10 +1,9 @@
 use crate::math::Tick;
+use alloy::primitives::Signed;
 use rug::float::ParseFloatError;
 use std::error::Error;
-use alloy::primitives::Signed;
 
 use crate::math::BoundsError;
-use crate::TickSpacing;
 
 #[derive(Debug, thiserror::Error)]
 pub enum V3PoolError<E: Error> {

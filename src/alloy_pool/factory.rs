@@ -42,7 +42,7 @@ alloy::sol! {
 }
 
 /// The alloy implementation of an on chain v3 factory.
-/// 
+///
 /// This is useful for getting pool instances from the underlying tokens
 pub struct Factory<T, P, N> {
     instance: FactoryInterfaceInstance<T, P, N>,
@@ -55,7 +55,9 @@ where
     N: Network,
 {
     pub const fn new(address: Address, provider: P) -> Self {
-        Self { instance: FactoryInterfaceInstance::new(address, provider) }
+        Self {
+            instance: FactoryInterfaceInstance::new(address, provider),
+        }
     }
 
     pub async fn pool_address(
@@ -64,7 +66,8 @@ where
         second_token: Address,
         fee: FeeTier,
     ) -> Result<Address, alloy::contract::Error> {
-        self.instance.getPool(first_token, second_token, fee.as_scaled_bp())
+        self.instance
+            .getPool(first_token, second_token, fee.as_scaled_bp())
             .call()
             .await
             .map(|x| x.pool)
@@ -112,25 +115,23 @@ where
 }
 
 #[cfg(feature = "aerodrome")]
-pub use aerodrome::{
-    AerodromeFactory,
-    AERODROME_FACTORY_ADDRESS
-};
+pub use aerodrome::{AerodromeFactory, AERODROME_FACTORY_ADDRESS};
 
 #[cfg(feature = "aerodrome")]
 mod aerodrome {
-    
-    use super::*;
+
     use super::AerodromeInterface::AerodromeInterfaceInstance as IAerodromeFactory;
+    use super::*;
     use alloy::contract::Error as ContractError;
     use alloy::primitives::Signed;
 
-    pub const AERODROME_FACTORY_ADDRESS: Address = alloy::primitives::address!("5e7BB104d84c7CB9B682AaC2F3d509f5F406809A");
+    pub const AERODROME_FACTORY_ADDRESS: Address =
+        alloy::primitives::address!("5e7BB104d84c7CB9B682AaC2F3d509f5F406809A");
 
     pub struct AerodromeFactory<T, P, N> {
         inner: IAerodromeFactory<T, P, N>,
     }
-    
+
     impl<T, P, N> AerodromeFactory<T, P, N>
     where
         P: Provider<T, N>,
@@ -142,22 +143,23 @@ mod aerodrome {
                 inner: IAerodromeFactory::new(AERODROME_FACTORY_ADDRESS, provider),
             }
         }
-    
+
         pub async fn get_pool_address(
             &self,
             token_a: Address,
             token_b: Address,
             tick_spacing: Signed<24, 1>,
-        ) -> Result<Address, ContractError> {    
-            let addr = self.inner
+        ) -> Result<Address, ContractError> {
+            let addr = self
+                .inner
                 .getPool(token_a, token_b, tick_spacing)
                 .call()
                 .await
                 .map(|addr| addr.pool)?;
-    
+
             Ok(addr)
         }
-    
+
         pub async fn get_pool(
             &self,
             token_a: Address,
@@ -167,7 +169,7 @@ mod aerodrome {
             self.get_pool_with_provider(self.inner.provider(), token_a, token_b, tick_spacing)
                 .await
         }
-    
+
         pub async fn get_pool_with_provider<P2>(
             &self,
             provider: P2,
@@ -181,12 +183,38 @@ mod aerodrome {
             let addr = self
                 .get_pool_address(token_a, token_b, tick_spacing)
                 .await?;
-    
-            let instance =
-                crate::alloy_pool::pool::V3PoolContract::V3PoolContractInstance::new(addr, provider);
-    
+
+            let instance = crate::alloy_pool::pool::V3PoolContract::V3PoolContractInstance::new(
+                addr, provider,
+            );
+
             Ok(crate::AerodromePool::new(instance).await?)
         }
-    }    
+    }
 }
 
+#[cfg(test)]
+mod test {
+    #[tokio::test]
+    async fn test_get_pool() {
+        use crate::V3Pool;
+        use alloy::primitives::{address, Address};
+        use alloy::providers::ProviderBuilder;
+
+        const WETH: Address = address!("4200000000000000000000000000000000000006");
+        const U_SUI: Address = address!("b0505e5a99abd03d94a1169e638B78EDfEd26ea4");
+
+        let provider = ProviderBuilder::new()
+            .with_recommended_fillers()
+            .on_http("https://mainnet.base.org".parse().unwrap());
+
+        let factory = super::AerodromeFactory::new(provider);
+
+        let pool = factory
+            .get_pool(U_SUI, WETH, crate::I24::try_from(200).unwrap())
+            .await
+            .unwrap();
+
+        let _ = pool.price().await.unwrap();
+    }
+}

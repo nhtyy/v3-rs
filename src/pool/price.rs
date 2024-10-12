@@ -1,4 +1,3 @@
-
 use crate::error::V3PoolError;
 use crate::math::tick::{price_to_initializable_tick, tick_to_price};
 use crate::math::{Price, SqrtPrice, Tick};
@@ -75,11 +74,7 @@ pub trait PriceExt: V3Pool {
         } else {
             tracing::debug!("current lower tick is equal to target lower tick");
 
-            deltas.update(
-                current_liquidity,
-                current_sqrt_price,
-                target_sqrt_price,
-            );
+            deltas.update(current_liquidity, current_sqrt_price, target_sqrt_price);
 
             return Ok(deltas);
         };
@@ -95,11 +90,7 @@ pub trait PriceExt: V3Pool {
 
                 let next_tick_price: SqrtPrice = tick_to_price(next_tick).into();
                 if next_tick_price > target_sqrt_price {
-                    deltas.update(
-                        current_liquidity,
-                        current_sqrt_price,
-                        target_sqrt_price,
-                    );
+                    deltas.update(current_liquidity, current_sqrt_price, target_sqrt_price);
 
                     tracing::trace!(?up, "exiting tick loop");
 
@@ -111,11 +102,7 @@ pub trait PriceExt: V3Pool {
 
                 let next_tick_price: SqrtPrice = tick_to_price(next_tick).into();
                 if next_tick_price < target_sqrt_price {
-                    deltas.update(
-                        current_liquidity,
-                        current_sqrt_price,
-                        target_sqrt_price,
-                    );
+                    deltas.update(current_liquidity, current_sqrt_price, target_sqrt_price);
 
                     tracing::trace!(?up, "exiting tick loop");
 

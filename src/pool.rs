@@ -8,8 +8,8 @@ use crate::math::{Price, SqrtPrice, Tick};
 
 use crate::PoolPrice;
 use crate::TokenIdx;
-use alloy::primitives::{Signed, Uint};
 use alloy::primitives::Address;
+use alloy::primitives::{Signed, Uint};
 use lazy_static::lazy_static;
 use rug::Float;
 

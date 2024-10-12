@@ -5,13 +5,13 @@ use crate::math::Tick;
 use crate::position::Balances;
 use crate::traits::{Batch, IntoFloat};
 // use crate::pool::{FeeTier, Tick, TickSpacing, V3Pool, V3PoolError};
-use crate::{AlloyManager, FeeTier, PoolResult, TickSpacing, V3Pool};
+use crate::{AlloyManager, PoolResult, V3Pool};
 use alloy::contract::Error as ContractError;
 use alloy::network::Network;
+use alloy::primitives::Signed;
 use alloy::primitives::{Address, Uint};
 use alloy::providers::Provider;
 use alloy::transports::{Transport, TransportError};
-use alloy::primitives::Signed;
 
 use rug::Float;
 use V3PoolContract::V3PoolContractInstance;
@@ -139,7 +139,7 @@ where
 
         let token0_decimals = crate::utils::decimals(pool.provider(), token0).await?;
         let token1_decimals = crate::utils::decimals(pool.provider(), token1).await?;
-        
+
         let tick_spacing = pool.tickSpacing().call().await?._0;
         let fee = pool.fee().call().await?._0;
 
@@ -261,13 +261,7 @@ where
             .await
             .map_err(V3PoolError::backend_error)?
             .into_iter()
-            .map(|x| {
-                if down {
-                    -x
-                } else {
-                    x
-                }
-            })
+            .map(|x| if down { -x } else { x })
             .collect::<Vec<_>>())
     }
 
@@ -295,7 +289,9 @@ where
     }
 
     async fn tick(&self, tick: Tick) -> Result<Float, V3PoolError<Self::BackendError>> {
-        M::tick(self, tick).await.map_err(V3PoolError::backend_error)
+        M::tick(self, tick)
+            .await
+            .map_err(V3PoolError::backend_error)
     }
 
     fn token0(&self) -> &Address {
@@ -335,7 +331,7 @@ trait ForkMarker<T, P, N>: Sized + Send + Sync + 'static {
         start: Tick,
         end: Tick,
         down: bool,
-    ) -> impl Future<Output = Result<Vec<i128>, ContractError>> + Send ;
+    ) -> impl Future<Output = Result<Vec<i128>, ContractError>> + Send;
 
     fn tick(
         instance: &AlloyPool<T, P, N, Self>,
