@@ -72,8 +72,8 @@ impl Tick {
     ///
     /// # Panics:
     /// - if the next tick is out of bounds
-    pub fn up(self, spacing: TickSpacing) -> Self {
-        let spacing = spacing as i32;
+    pub fn up(self, spacing: crate::I24) -> Self {
+        let spacing: i32 = spacing.unchecked_into();
         let scalar = self.0 / spacing + 1;
         let next_tick = scalar * spacing;
 
@@ -88,8 +88,8 @@ impl Tick {
     ///
     /// # Panics:
     /// - if the next tick is out of bounds
-    pub fn down(self, spacing: TickSpacing) -> Self {
-        let spacing = spacing as i32;
+    pub fn down(self, spacing: crate::I24) -> Self {
+        let spacing: i32 = spacing.unchecked_into();
         let scalar = self.0 / spacing - 1;
         let prev_tick = scalar * spacing;
 

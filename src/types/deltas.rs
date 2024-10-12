@@ -67,8 +67,8 @@ impl<'a, P: V3Pool> Deltas<'a, P> {
             return TokenAmount::zero(self.pool, super::Token::Zero);
         }
 
-        let fee = Float::with_val(100, self.pool.fee().as_bp());
-        let fee = fee / 10000;
+        let fee = Float::with_val(100, self.pool.fee().to::<u32>());
+        let fee = fee / 1e6;
         let decay = 1 - fee;
 
         // The positive amount is the amount coming into the pool

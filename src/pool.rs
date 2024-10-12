@@ -7,7 +7,8 @@ use crate::error::V3PoolError;
 use crate::math::{Price, SqrtPrice, Tick};
 
 use crate::PoolPrice;
-use crate::{FeeTier, TickSpacing, TokenIdx};
+use crate::TokenIdx;
+use alloy::primitives::{Signed, Uint};
 use alloy::primitives::Address;
 use lazy_static::lazy_static;
 use rug::Float;
@@ -24,7 +25,7 @@ pub trait V3Pool: Send + Sync + Sized {
     type BackendError: Error + Send + Sync;
 
     /// The fee tier of the pool
-    fn fee(&self) -> &FeeTier;
+    fn fee(&self) -> Uint<24, 1>;
     fn token0(&self) -> &Address;
     fn token0_decimals(&self) -> &u8;
     fn token1(&self) -> &Address;
@@ -65,9 +66,7 @@ pub trait V3Pool: Send + Sync + Sized {
     }
 
     /// Returns the tick spacing of the pool
-    fn tick_spacing(&self) -> TickSpacing {
-        self.fee().as_spacing()
-    }
+    fn tick_spacing(&self) -> Signed<24, 1>;
 
     /// The price of the pool (with decimals)
     async fn price(&self) -> PoolResult<Price, Self::BackendError> {

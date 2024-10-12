@@ -141,7 +141,7 @@ where
             .filter(|pos| {
                 pos.token0 == *pool.token0()
                     && pos.token1 == *pool.token1()
-                    && pos.fee == pool.fee().as_scaled_bp()
+                    && pos.fee == pool.fee()
             })
             .collect::<Vec<_>>();
 

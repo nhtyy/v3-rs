@@ -1,16 +1,24 @@
+use std::future::Future;
+
 use crate::error::V3PoolError;
 use crate::math::Tick;
 use crate::position::Balances;
-use crate::traits::{IntoFloat, Batch};
+use crate::traits::{Batch, IntoFloat};
 // use crate::pool::{FeeTier, Tick, TickSpacing, V3Pool, V3PoolError};
-use crate::{FeeTier, AlloyManager, PoolResult, TickSpacing, V3Pool};
+use crate::{AlloyManager, FeeTier, PoolResult, TickSpacing, V3Pool};
+use alloy::contract::Error as ContractError;
 use alloy::network::Network;
-use alloy::primitives::Address;
+use alloy::primitives::{Address, Uint};
 use alloy::providers::Provider;
 use alloy::transports::{Transport, TransportError};
+use alloy::primitives::Signed;
 
 use rug::Float;
 use V3PoolContract::V3PoolContractInstance;
+
+pub type Pool<T, P, N> = AlloyPool<T, P, N, VanillaMarker>;
+
+pub type AerodromePool<T, P, N> = AlloyPool<T, P, N, AerodromeMarker>;
 
 alloy::sol! {
     #[derive(Debug)]
@@ -19,60 +27,6 @@ alloy::sol! {
         /// @notice The currently in range liquidity available to the pool
         /// @dev This value has no relationship to the total liquidity across all ticks
         function liquidity() external view returns (uint128);
-
-        /// @notice The 0th storage slot in the pool stores many values, and is exposed as a single method to save gas
-        /// when accessed externally.
-        /// @return sqrtPriceX96 The current price of the pool as a sqrt(token1/token0) Q64.96 value
-        /// tick The current tick of the pool, i.e. according to the last tick transition that was run.
-        /// This value may not always be equal to SqrtTickMath.getTickAtSqrtRatio(sqrtPriceX96) if the price is on a tick
-        /// boundary.
-        /// observationIndex The index of the last oracle observation that was written,
-        /// observationCardinality The current maximum number of observations stored in the pool,
-        /// observationCardinalityNext The next maximum number of observations, to be updated when the observation.
-        /// feeProtocol The protocol fee for both tokens of the pool.
-        /// Encoded as two 4 bit values, where the protocol fee of token1 is shifted 4 bits and the protocol fee of token0
-        /// is the lower 4 bits. Used as the denominator of a fraction of the swap fee, e.g. 4 means 1/4th of the swap fee.
-        /// unlocked Whether the pool is currently locked to reentrancy
-        function slot0()
-            external
-            view
-            returns (
-                uint160 sqrtPriceX96,
-                int24 tick,
-                uint16 observationIndex,
-                uint16 observationCardinality,
-                uint16 observationCardinalityNext,
-                uint8 feeProtocol,
-                bool unlocked
-            );
-
-        /// @notice Look up information about a specific tick in the pool
-        /// @param tick The tick to look up
-        /// @return liquidityGross the total amount of position liquidity that uses the pool either as tick lower or
-        /// tick upper,
-        /// liquidityNet how much liquidity changes when the pool price crosses the tick,
-        /// feeGrowthOutside0X128 the fee growth on the other side of the tick from the current tick in token0,
-        /// feeGrowthOutside1X128 the fee growth on the other side of the tick from the current tick in token1,
-        /// tickCumulativeOutside the cumulative tick value on the other side of the tick from the current tick
-        /// secondsPerLiquidityOutsideX128 the seconds spent per liquidity on the other side of the tick from the current tick,
-        /// secondsOutside the seconds spent on the other side of the tick from the current tick,
-        /// initialized Set to true if the tick is initialized, i.e. liquidityGross is greater than 0, otherwise equal to false.
-        /// Outside values can only be used if the tick is initialized, i.e. if liquidityGross is greater than 0.
-        /// In addition, these values are only relative and must be used only in comparison to previous snapshots for
-        /// a specific position.
-        function ticks(int24 tick)
-            external
-            view
-            returns (
-                uint128 liquidityGross,
-                int128 liquidityNet,
-                uint256 feeGrowthOutside0X128,
-                uint256 feeGrowthOutside1X128,
-                int56 tickCumulativeOutside,
-                uint160 secondsPerLiquidityOutsideX128,
-                uint32 secondsOutside,
-                bool initialized
-            );
 
         /// @notice The first of the two tokens of the pool, sorted by address
         /// @return The token contract address
@@ -93,22 +47,85 @@ alloy::sol! {
         /// @return The tick spacing
         function tickSpacing() external view returns (int24);
     }
+
+    #[sol(rpc)]
+    interface Vanilla {
+        function slot0()
+            external
+            view
+            returns (
+                uint160 sqrtPriceX96,
+                int24 tick,
+                uint16 observationIndex,
+                uint16 observationCardinality,
+                uint16 observationCardinalityNext,
+                uint8 feeProtocol,
+                bool unlocked
+            );
+
+        function ticks(int24 tick)
+            external
+            view
+            returns (
+                uint128 liquidityGross,
+                int128 liquidityNet,
+                uint256 feeGrowthOutside0X128,
+                uint256 feeGrowthOutside1X128,
+                int56 tickCumulativeOutside,
+                uint160 secondsPerLiquidityOutsideX128,
+                uint32 secondsOutside,
+                bool initialized
+            );
+    }
+
+    #[sol(rpc)]
+    #[cfg(feature = "aerodrome")]
+    interface Aerodrome {
+        function slot0()
+            external
+            view
+            returns (
+                uint160 sqrtPriceX96,
+                int24 tick,
+                uint16 observationIndex,
+                uint16 observationCardinality,
+                uint16 observationCardinalityNext,
+                bool unlocked
+            );
+
+        function ticks(int24 tick)
+            external
+            view
+            returns (
+                uint128 liquidityGross,
+                int128 liquidityNet,
+                int128 stakedLiquidityNet,
+                uint256 feeGrowthOutside0X128,
+                uint256 feeGrowthOutside1X128,
+                uint256 rewardGrowthOutsideX128,
+                int56 tickCumulativeOutside,
+                uint160 secondsPerLiquidityOutsideX128,
+                uint32 secondsOutside,
+                bool initialized
+            );
+    }
 }
 
 /// The alloy implementation of an on chain v3 pool.
-/// 
+///
 /// See the [crate::V3Pool] trait for more information
-pub struct Pool<T, P, N> {
+pub struct AlloyPool<T, P, N, M> {
     pool: V3PoolContractInstance<T, P, N>,
-    tick_spacing: TickSpacing,
+    tick_spacing: Signed<24, 1>,
     token0: Address,
     token1: Address,
     token0_decimals: u8,
     token1_decimals: u8,
-    fee: FeeTier,
+    fee: Uint<24, 1>,
+    _marker: std::marker::PhantomData<M>,
 }
 
-impl<T, P, N> Pool<T, P, N>
+impl<T, P, N, M> AlloyPool<T, P, N, M>
 where
     T: Transport + Clone,
     P: Provider<T, N>,
@@ -116,27 +133,38 @@ where
 {
     pub async fn new(
         pool: V3PoolContractInstance<T, P, N>,
-        fee: FeeTier,
     ) -> Result<Self, alloy::contract::Error> {
         let token0 = pool.token0().call().await?._0;
         let token1 = pool.token1().call().await?._0;
 
         let token0_decimals = crate::utils::decimals(pool.provider(), token0).await?;
         let token1_decimals = crate::utils::decimals(pool.provider(), token1).await?;
+        
+        let tick_spacing = pool.tickSpacing().call().await?._0;
+        let fee = pool.fee().call().await?._0;
 
         Ok(Self {
             pool,
-            tick_spacing: fee.as_spacing(),
+            tick_spacing,
             token0,
             token1,
             token0_decimals,
             token1_decimals,
             fee,
+            _marker: std::marker::PhantomData,
         })
     }
+}
 
+impl<T, P, N, M> AlloyPool<T, P, N, M>
+where
+    T: Transport + Clone,
+    P: Provider<T, N>,
+    N: Network,
+    Self: V3Pool<BackendError = alloy::contract::Error>,
+{
     /// Get the (NFT) LP balance owned by the address
-    /// 
+    ///
     /// # Errors
     /// - If the chain constants are not supported (see [crate::constants::NETWORKS] & [Self::lp_balance_with_manager])
     pub async fn lp_balance(
@@ -164,7 +192,7 @@ where
     }
 
     /// Returns all the NFT liquidty positions for this manager
-    /// 
+    ///
     /// Manager: The nft position manager contract to query
     pub async fn lp_balance_with_manager<P2>(
         &self,
@@ -179,11 +207,12 @@ where
 }
 
 #[async_trait::async_trait]
-impl<T, P, N> V3Pool for Pool<T, P, N>
+impl<T, P, N, M> V3Pool for AlloyPool<T, P, N, M>
 where
     T: Transport + Clone,
     P: Provider<T, N>,
     N: Network,
+    M: ForkMarker<T, P, N>,
 {
     type BackendError = alloy::contract::Error;
 
@@ -193,7 +222,7 @@ where
         starting: Tick,
         ending: Tick,
     ) -> PoolResult<Vec<i128>, Self::BackendError> {
-        let spacing = self.tick_spacing as i32;
+        let spacing: i32 = self.tick_spacing.unchecked_into();
         let mut down: bool = false;
 
         let differnce = starting - ending;
@@ -228,33 +257,22 @@ where
             return Ok(vec![]);
         }
 
-        let mut calls = Vec::new();
-        let mut current = starting;
-        // we know this should happen because we check that the diff is a multiple of the spacing
-        while current != ending {
-            calls.push(self.pool.ticks(current.into()));
-
-            if down {
-                current = current.down(self.tick_spacing);
-            } else {
-                current = current.up(self.tick_spacing);
-            }
-        }
-
-        Ok(calls
-            .batch()
-            .call()
+        Ok(M::liquidity_net(self, starting, ending, down)
             .await
             .map_err(V3PoolError::backend_error)?
             .into_iter()
             .map(|x| {
                 if down {
-                    -x.liquidityNet
+                    -x
                 } else {
-                    x.liquidityNet
+                    x
                 }
             })
             .collect::<Vec<_>>())
+    }
+
+    fn tick_spacing(&self) -> crate::I24 {
+        self.tick_spacing
     }
 
     async fn current_liquidity(&self) -> Result<Float, V3PoolError<Self::BackendError>> {
@@ -271,25 +289,13 @@ where
     }
 
     async fn sqrt_price_x96(&self) -> Result<Float, V3PoolError<Self::BackendError>> {
-        let slot = self
-            .pool
-            .slot0()
-            .call()
+        M::sqrt_price_x96(self)
             .await
-            .map_err(V3PoolError::backend_error)?;
-
-        Ok(slot.sqrtPriceX96.into_float())
+            .map_err(V3PoolError::backend_error)
     }
 
     async fn tick(&self, tick: Tick) -> Result<Float, V3PoolError<Self::BackendError>> {
-        let tick = self
-            .pool
-            .ticks(tick.into())
-            .call()
-            .await
-            .map_err(V3PoolError::backend_error)?;
-
-        Ok(Float::with_val(100, tick.liquidityNet))
+        M::tick(self, tick).await.map_err(V3PoolError::backend_error)
     }
 
     fn token0(&self) -> &Address {
@@ -308,11 +314,151 @@ where
         &self.token1_decimals
     }
 
-    fn fee(&self) -> &FeeTier {
-        &self.fee
+    fn fee(&self) -> alloy::primitives::Uint<24, 1> {
+        self.fee
     }
 
     fn address(&self) -> Address {
         *self.pool.address()
+    }
+}
+
+/// The vanilla implementation of an on chain v3 pool.
+pub struct VanillaMarker;
+
+/// The aerodrome implementation of an on chain v3 pool.
+pub struct AerodromeMarker;
+
+trait ForkMarker<T, P, N>: Sized + Send + Sync + 'static {
+    fn liquidity_net(
+        instance: &AlloyPool<T, P, N, Self>,
+        start: Tick,
+        end: Tick,
+        down: bool,
+    ) -> impl Future<Output = Result<Vec<i128>, ContractError>> + Send ;
+
+    fn tick(
+        instance: &AlloyPool<T, P, N, Self>,
+        tick: Tick,
+    ) -> impl Future<Output = Result<Float, ContractError>> + Send;
+
+    fn sqrt_price_x96(
+        instance: &AlloyPool<T, P, N, Self>,
+    ) -> impl Future<Output = Result<Float, ContractError>> + Send;
+}
+
+impl<T, P, N> ForkMarker<T, P, N> for VanillaMarker
+where
+    T: Transport + Clone,
+    P: Provider<T, N>,
+    N: Network,
+{
+    async fn liquidity_net(
+        instance: &AlloyPool<T, P, N, Self>,
+        start: Tick,
+        end: Tick,
+        down: bool,
+    ) -> Result<Vec<i128>, ContractError> {
+        let pool =
+            Vanilla::VanillaInstance::new(*instance.pool.address(), instance.pool.provider());
+
+        let mut calls = Vec::new();
+        let mut current = start;
+        // we know this should happen because we check that the diff is a multiple of the spacing
+        while current != end {
+            calls.push(pool.ticks(current.into()));
+
+            if down {
+                current = current.down(instance.tick_spacing);
+            } else {
+                current = current.up(instance.tick_spacing);
+            }
+        }
+
+        Ok(calls
+            .batch()
+            .call()
+            .await?
+            .into_iter()
+            .map(|x| x.liquidityNet)
+            .collect())
+    }
+
+    async fn tick(instance: &AlloyPool<T, P, N, Self>, tick: Tick) -> Result<Float, ContractError> {
+        let pool =
+            Vanilla::VanillaInstance::new(*instance.pool.address(), instance.pool.provider());
+
+        pool.ticks(tick.into())
+            .call()
+            .await
+            .map(|x| Float::with_val(100, x.liquidityNet))
+    }
+
+    async fn sqrt_price_x96(instance: &AlloyPool<T, P, N, Self>) -> Result<Float, ContractError> {
+        let pool =
+            Vanilla::VanillaInstance::new(*instance.pool.address(), instance.pool.provider());
+
+        pool.slot0()
+            .call()
+            .await
+            .map(|x| x.sqrtPriceX96.into_float())
+    }
+}
+
+impl<T, P, N> ForkMarker<T, P, N> for AerodromeMarker
+where
+    T: Transport + Clone,
+    P: Provider<T, N>,
+    N: Network,
+{
+    async fn liquidity_net(
+        instance: &AlloyPool<T, P, N, Self>,
+        start: Tick,
+        end: Tick,
+        down: bool,
+    ) -> Result<Vec<i128>, ContractError> {
+        let pool =
+            Aerodrome::AerodromeInstance::new(*instance.pool.address(), instance.pool.provider());
+
+        let mut calls = Vec::new();
+        let mut current = start;
+        // we know this should happen because we check that the diff is a multiple of the spacing
+        while current != end {
+            calls.push(pool.ticks(current.into()));
+
+            if down {
+                current = current.down(instance.tick_spacing);
+            } else {
+                current = current.up(instance.tick_spacing);
+            }
+        }
+
+        Ok(calls
+            .batch()
+            .call()
+            .await?
+            .into_iter()
+            .map(|x| x.liquidityNet)
+            .collect())
+    }
+
+    async fn tick(instance: &AlloyPool<T, P, N, Self>, tick: Tick) -> Result<Float, ContractError> {
+        let pool =
+            Aerodrome::AerodromeInstance::new(*instance.pool.address(), instance.pool.provider());
+
+        pool.ticks(tick.into())
+            .call()
+            .await
+            .map(|x| Float::with_val(100, x.liquidityNet))
+    }
+
+    async fn sqrt_price_x96(instance: &AlloyPool<T, P, N, Self>) -> Result<Float, ContractError> {
+        let pool =
+            Aerodrome::AerodromeInstance::new(*instance.pool.address(), instance.pool.provider());
+
+        pool.slot0()
+            .call()
+            .await
+            .map(|x| x.sqrtPriceX96.into_float())
     }
 }

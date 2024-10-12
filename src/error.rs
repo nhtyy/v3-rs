@@ -1,6 +1,7 @@
 use crate::math::Tick;
 use rug::float::ParseFloatError;
 use std::error::Error;
+use alloy::primitives::Signed;
 
 use crate::math::BoundsError;
 use crate::TickSpacing;
@@ -16,7 +17,7 @@ pub enum V3PoolError<E: Error> {
     #[error("Pool not found")]
     PoolNotFound,
     #[error("Bad tick range: {0:?} {1:?} {2:?}")]
-    BadTickRange(Tick, Tick, TickSpacing),
+    BadTickRange(Tick, Tick, Signed<24, 1>),
     #[error("Too many ticks")]
     TooManyTicks,
     #[error("Unsupported Chain")]

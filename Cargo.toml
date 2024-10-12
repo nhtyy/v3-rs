@@ -34,6 +34,7 @@ path = "examples/optimal_swap_for_price.rs"
 
 [features]
 default = []
+aerodrome = []
 trace_callMany = ["alloy/rpc-types-trace"]
 eth_callMany = []
 

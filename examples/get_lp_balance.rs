@@ -1,4 +1,4 @@
-use v3_rs::{AlloyFactory, FeeTier, constants::MAINNET};
+use v3_rs::{Factory, FeeTier, constants::MAINNET};
 use alloy::providers::ProviderBuilder;
 use alloy::primitives::{address, Address};
 
@@ -10,7 +10,7 @@ const LP: Address = address!();
 async fn main() {
     let provider = ProviderBuilder::new().with_recommended_fillers().on_http("https://cloudflare-eth.com".parse().unwrap());
 
-    let factory = AlloyFactory::new(MAINNET.factory, &provider);
+    let factory = Factory::new(MAINNET.factory, &provider);
 
     let pool = factory.pool(TOKEN_A, TOKEN_B, FeeTier::Mid).await.unwrap();
 

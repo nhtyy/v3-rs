@@ -29,8 +29,8 @@ pub fn price_to_tick(price: Price) -> Tick {
 }
 
 /// the *initializable lower* tick corresponding to this price
-pub fn price_to_initializable_tick(price: Price, tick_spacing: TickSpacing) -> Tick {
-    let spacing = tick_spacing as u8;
+pub fn price_to_initializable_tick(price: Price, tick_spacing: crate::I24) -> Tick {
+    let spacing: i32 = tick_spacing.unchecked_into();
 
     // change of base log[1.0001](price)
     let tick = price.into_inner().ln() / &*LN_TICK_BASE;

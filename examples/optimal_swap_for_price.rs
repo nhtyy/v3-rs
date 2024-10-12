@@ -1,6 +1,6 @@
 use alloy::primitives::{address, Address};
 use alloy::providers::ProviderBuilder;
-use v3_rs::{constants::MAINNET, math::Price, AlloyFactory, FeeTier, PriceExt, V3Pool};
+use v3_rs::{constants::MAINNET, math::Price, Factory, FeeTier, PriceExt, V3Pool};
 
 const WETH: Address = address!("c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");
 const DAI: Address = address!("6b175474e89094c44da98b954eedeac495271d0f");
@@ -11,7 +11,7 @@ async fn main() {
         .with_recommended_fillers()
         .on_http("https://cloudflare-eth.com".parse().unwrap());
 
-    let factory = AlloyFactory::new(MAINNET.factory, &provider);
+    let factory = Factory::new(MAINNET.factory, &provider);
 
     let pool = factory.pool(WETH, DAI, FeeTier::Mid).await.unwrap();
 

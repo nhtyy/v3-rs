@@ -336,7 +336,7 @@ mod test {
             token1: Address::ZERO,
             token0_decimals: 18,
             token1_decimals: 18,
-            fee: FeeTier::Mid,
+            fee: alloy::primitives::Uint::<24, 1>::from(3000),
         };
 
         let amount = TokenAmount::from_scaled(&pool, TokenIdx::Zero, Float::with_val(100, 100));
@@ -352,7 +352,7 @@ mod test {
             token1: Address::ZERO,
             token0_decimals: 18,
             token1_decimals: 18,
-            fee: FeeTier::Mid,
+            fee: alloy::primitives::Uint::<24, 1>::from(3000),
         };
 
         let amount = TokenAmount::from_scaled(&pool, TokenIdx::Zero, Float::with_val(100, 100));
@@ -368,7 +368,7 @@ mod test {
             token1: Address::ZERO,
             token0_decimals: 18,
             token1_decimals: 18,
-            fee: FeeTier::Mid,
+            fee: alloy::primitives::Uint::<24, 1>::from(3000),
         };
 
         let amount = TokenAmount::from_scaled(&pool, TokenIdx::Zero, Float::with_val(100, 100));
@@ -385,7 +385,7 @@ mod test {
             token1: Address::ZERO,
             token0_decimals: 18,
             token1_decimals: 18,
-            fee: FeeTier::Mid,
+            fee: alloy::primitives::Uint::<24, 1>::from(3000),
         };
 
         let amount = TokenAmount::from_scaled(&pool, TokenIdx::Zero, Float::with_val(100, 100));
@@ -402,7 +402,7 @@ mod test {
             token1: Address::ZERO,
             token0_decimals: 18,
             token1_decimals: 18,
-            fee: FeeTier::Mid,
+            fee: alloy::primitives::Uint::<24, 1>::from(3000),
         };
 
         let amount = 100_u8;
@@ -418,7 +418,7 @@ mod test {
             token1: Address::ZERO,
             token0_decimals: 18,
             token1_decimals: 18,
-            fee: FeeTier::Mid,
+            fee: alloy::primitives::Uint::<24, 1>::from(3000),
         };
 
         let amount = 100.0;
@@ -434,7 +434,7 @@ mod test {
             token1: Address::ZERO,
             token0_decimals: 18,
             token1_decimals: 18,
-            fee: FeeTier::Mid,
+            fee: alloy::primitives::Uint::<24, 1>::from(3000),
         };
 
         let scalar = Float::with_val(100, 10).pow(18);
@@ -452,7 +452,7 @@ mod test {
             token1: Address::ZERO,
             token0_decimals: 18,
             token1_decimals: 18,
-            fee: FeeTier::Mid,
+            fee: alloy::primitives::Uint::<24, 1>::from(3000),
         };
 
         let amount = TokenAmount::from_scaled(&pool, TokenIdx::Zero, Float::with_val(100, 100));

@@ -92,7 +92,7 @@ mod tests {
         pub token1: Address,
         pub token0_decimals: u8,
         pub token1_decimals: u8,
-        pub fee: FeeTier,
+        pub fee: alloy::primitives::Uint<24, 1>,
     }
 
     #[async_trait::async_trait]
@@ -115,8 +115,12 @@ mod tests {
             &self.token1_decimals
         }
 
-        fn fee(&self) -> &FeeTier {
-            &self.fee
+        fn fee(&self) -> alloy::primitives::Uint<24, 1> {
+            self.fee
+        }
+
+        fn tick_spacing(&self) -> alloy::primitives::Signed<24, 1> {
+            alloy::primitives::Signed::<24, 1>::ZERO
         }
 
         fn address(&self) -> Address {

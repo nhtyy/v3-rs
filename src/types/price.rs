@@ -157,7 +157,7 @@ mod test {
             token1: Default::default(),
             token0_decimals: 4,
             token1_decimals: 10,
-            fee: crate::FeeTier::Mid,
+            fee: alloy::primitives::Uint::<24, 1>::from(3000),
         };
 
         let price = rug::Float::with_val(100, 100);
@@ -182,7 +182,7 @@ mod test {
             token1: Default::default(),
             token0_decimals: 5,
             token1_decimals: 10,
-            fee: crate::FeeTier::Mid,
+            fee: alloy::primitives::Uint::<24, 1>::from(3000),
         };
 
         let price = rug::Float::with_val(100, 100);

@@ -11,7 +11,10 @@ pub mod constants;
 /// The Alloy Implementation of the [crate::V3Pool] trait
 pub mod alloy_pool;
 #[doc(inline)]
-pub use alloy_pool::{factory::Factory as AlloyFactory, pool::Pool as AlloyPool};
+pub use alloy_pool::{
+    factory::{AerodromeFactory, Factory},
+    pool::{AerodromePool, Pool},
+};
 
 pub mod pool;
 #[doc(inline)]
@@ -30,7 +33,9 @@ pub mod math;
 /// Some useful types that are used in the library
 pub mod types;
 #[doc(inline)]
-pub use types::{TokenAmount, PoolPrice, FeeTier, TickSpacing, Token as TokenIdx};
+pub use types::{FeeTier, PoolPrice, TickSpacing, Token as TokenIdx, TokenAmount};
+
+pub type I24 = alloy::primitives::Signed<24, 1>;
 
 mod utils {
     use alloy::contract::Error;
