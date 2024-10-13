@@ -138,7 +138,7 @@ mod aerodrome {
         T: Transport + Clone,
         N: Network,
     {
-        pub fn new(provider: P) -> Self {
+        pub const fn new(provider: P) -> Self {
             Self {
                 inner: IAerodromeFactory::new(AERODROME_FACTORY_ADDRESS, provider),
             }
@@ -195,6 +195,7 @@ mod aerodrome {
 
 #[cfg(test)]
 mod test {
+    #[cfg(feature = "aerodrome")]
     #[tokio::test]
     async fn test_get_pool() {
         use crate::V3Pool;

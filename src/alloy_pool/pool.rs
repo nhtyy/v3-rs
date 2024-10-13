@@ -18,6 +18,7 @@ use V3PoolContract::V3PoolContractInstance;
 
 pub type Pool<T, P, N> = AlloyPool<T, P, N, VanillaMarker>;
 
+#[cfg(feature = "aerodrome")]
 pub type AerodromePool<T, P, N> = AlloyPool<T, P, N, AerodromeMarker>;
 
 alloy::sol! {
@@ -322,7 +323,8 @@ where
 /// The vanilla implementation of an on chain v3 pool.
 pub struct VanillaMarker;
 
-/// The aerodrome implementation of an on chain v3 pool.
+/// The aerodrome implementation of an on chain v3 pool. 
+#[cfg(feature = "aerodrome")]
 pub struct AerodromeMarker;
 
 trait ForkMarker<T, P, N>: Sized + Send + Sync + 'static {
@@ -401,6 +403,7 @@ where
     }
 }
 
+#[cfg(feature = "aerodrome")]
 impl<T, P, N> ForkMarker<T, P, N> for AerodromeMarker
 where
     T: Transport + Clone,

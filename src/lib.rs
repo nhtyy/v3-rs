@@ -12,9 +12,12 @@ pub mod constants;
 pub mod alloy_pool;
 #[doc(inline)]
 pub use alloy_pool::{
-    factory::{AerodromeFactory, Factory},
-    pool::{AerodromePool, Pool},
+    factory::Factory,
+    pool::Pool,
 };
+
+#[cfg(feature = "aerodrome")]
+pub use alloy_pool::{pool::AerodromePool, factory::AerodromeFactory};
 
 pub mod pool;
 #[doc(inline)]
