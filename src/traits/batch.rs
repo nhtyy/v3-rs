@@ -4,6 +4,7 @@ use alloy::providers::Provider;
 use alloy::sol;
 use alloy::sol_types::SolCall;
 use alloy::transports::Transport;
+use alloy::network::TransactionBuilder;
 
 pub trait Batch: Sized {
     /// Batch a collection of calls using one of the available batching strategies.
